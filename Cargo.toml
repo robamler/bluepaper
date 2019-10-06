@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 pulldown-cmark = "0.6.0"
+log = { version = "0.4", features = ["std"] }
+structopt = "0.3.2"
+stderrlog = "0.4.1"
