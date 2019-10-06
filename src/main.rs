@@ -13,6 +13,9 @@ const HEADINGS: [(&[u8], u32); 4] = [
     (br"\paragraph{", 1),
 ];
 
+const MAX_ENUMERATE_NESTING: u32 = 4;
+const LOWER_ROMAN: [&str; MAX_ENUMERATE_NESTING as usize] = ["i", "ii", "iii", "iv"];
+
 fn main() {
     let file = File::open("sample.md").unwrap();
     let mut file = BufReader::new(file);
@@ -29,10 +32,12 @@ fn main() {
     let output = BufWriter::new(output);
     let mut output = LatexEscaper::new(output);
 
+    let mut enumerate_nesting = 0;
+
     while let Some(event) = parser.next() {
         {
             #![cfg(debug_assertions)]
-            dbg!(event.clone());
+            dbg!(&event);
         }
 
         match event {
@@ -88,16 +93,30 @@ fn main() {
                 output.on_single_line(br"\end{itemize}").unwrap();
             }
 
-            Event::Start(Tag::List(Some(_first_number))) => {
-                // TODO: use first_number
+            Event::Start(Tag::List(Some(first_number))) => {
                 output.on_single_line(br"\begin{enumerate}").unwrap();
                 output.increase_indent();
+
+                if first_number != 1 && enumerate_nesting < MAX_ENUMERATE_NESTING {
+                    output
+                        .on_single_line(
+                            format!(
+                                r"\setcounter{{enum{}}}{{{}}}",
+                                LOWER_ROMAN[enumerate_nesting as usize],
+                                first_number as i64 - 1
+                            )
+                            .as_bytes(),
+                        )
+                        .unwrap();
+                }
                 output.increase_indent();
+                enumerate_nesting += 1
             }
             Event::End(Tag::List(Some(_first_number))) => {
                 output.decrease_indent();
                 output.decrease_indent();
                 output.on_single_line(br"\end{enumerate}").unwrap();
+                enumerate_nesting -= 1
             }
 
             Event::Start(Tag::Item) => {
@@ -108,6 +127,19 @@ fn main() {
                 output.limit_newlines(0);
             }
             Event::End(Tag::Item) => {}
+
+            Event::TaskListMarker(checked) => {
+                // TODO: in preamble, define `\checkedbox` as:
+                // \mbox{\ooalign{$\square$\cr\hidewidth\raisebox{.45ex}{\hspace{0.2em}$\checkmark$}\hidewidth\cr}}
+                // and `\uncheckedbox` as $\square$
+                let code: &[u8] = if checked {
+                    br"[\checkedbox] "
+                } else {
+                    br"[\uncheckedbox] "
+                };
+                output.write_all(code).unwrap();
+                output.limit_newlines(0);
+            }
 
             Event::Start(Tag::FootnoteDefinition(_)) => {
                 unimplemented!("FootnoteDefinition") // TODO
@@ -211,8 +243,11 @@ fn main() {
                 output.write_all(br"}").unwrap();
             }
 
-            Event::Html(_) => {
-                unimplemented!("Html") // TODO
+            Event::Html(html) => {
+                // TODO: output a warning that HTML conversion is not implemented.
+                output.write_all(br"\texttt{").unwrap();
+                output.write_all_escaped(&html).unwrap();
+                output.write_all(br"}").unwrap();
             }
 
             Event::SoftBreak => {
@@ -226,10 +261,6 @@ fn main() {
 
             Event::Rule => {
                 output.write_all(br"\par\noindent\hrulefill\par").unwrap();
-            }
-
-            Event::TaskListMarker(_checked) => {
-                unimplemented!("TaskListMarker") // TODO
             }
         }
     }
