@@ -1,13 +1,16 @@
+use latex_escape::LatexEscaper;
 use pulldown_cmark::{CowStr, Event, LinkType, Options, Parser, Tag};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 
-const HEADINGS: [(&[u8], bool); 4] = [
-    (br"\section{", true),
-    (br"\subsection{", true),
-    (br"\subsubsection{", true),
-    (br"\paragraph{", false),
+mod latex_escape;
+
+const HEADINGS: [(&[u8], u32); 4] = [
+    (br"\section{", 2),
+    (br"\subsection{", 2),
+    (br"\subsubsection{", 2),
+    (br"\paragraph{", 1),
 ];
 
 fn main() {
@@ -23,70 +26,86 @@ fn main() {
     let mut parser = Parser::new_ext(&input, options);
 
     let output = std::io::stdout();
-    let mut output = BufWriter::new(output);
-
-    let mut ident = 0u32;
-    let mut newlines = 0u32;
+    let output = BufWriter::new(output);
+    let mut output = LatexEscaper::new(output);
 
     while let Some(event) = parser.next() {
+        {
+            #![cfg(debug_assertions)]
+            dbg!(event.clone());
+        }
+
         match event {
             Event::Start(Tag::Heading(level)) => {
-                write_paragraph_break(&mut output, &mut newlines).unwrap();
-                write_inline(
-                    &mut output,
-                    HEADINGS[(std::cmp::min(level as usize, HEADINGS.len()) - 1)].0,
-                    &mut newlines,
-                )
-                .unwrap();
+                let h = HEADINGS[(std::cmp::min(level as usize, HEADINGS.len()) - 1)];
+                output.add_newlines(h.1 + 1);
+                output.write_all(h.0).unwrap();
             }
             Event::End(Tag::Heading(level)) => {
-                write_inline(&mut output, b"}", &mut newlines).unwrap();
-                if HEADINGS[(std::cmp::min(level as usize, HEADINGS.len()) - 1)].1 {
-                    write_paragraph_break(&mut output, &mut newlines).unwrap();
-                } else {
-                    write_soft_line_break(&mut output, &mut newlines).unwrap();
-                }
+                output.write_all(b"}").unwrap();
+                let h = HEADINGS[(std::cmp::min(level as usize, HEADINGS.len()) - 1)];
+                output.add_newlines(h.1);
+                output.limit_newlines(2); // Handles case of multiple consecutive headers
             }
 
-            Event::Start(Tag::Paragraph) => {}
-            Event::End(Tag::Paragraph) => {}
+            Event::Start(Tag::Paragraph) => {
+                output.add_newlines(2);
+            }
+            Event::End(Tag::Paragraph) => {
+                output.add_newlines(2);
+            }
 
             Event::Start(Tag::BlockQuote) => {
-                write_on_single_line(&mut output, br"\begin{quote}", &mut newlines).unwrap();
+                output.on_single_line(br"\begin{quote}").unwrap();
             }
             Event::End(Tag::BlockQuote) => {
-                write_on_single_line(&mut output, br"\end{quote}", &mut newlines).unwrap();
+                output.on_single_line(br"\end{quote}").unwrap();
             }
 
             Event::Start(Tag::CodeBlock(_language)) => {
                 // TODO: Use specified language for syntax highlighting.
                 // TODO: Use the verbatim package to define a new verbatim environment if the text
                 // of the code block contains the string "\end{verbatim}".
-                write_on_single_line(&mut output, br"\begin{verbatim}", &mut newlines).unwrap();
+                output.on_single_line(br"\begin{verbatim}").unwrap();
+                output.limit_newlines(1);
                 // TODO: set some variable that we're in a code block so that text blocks will be
                 // escaped differently.
             }
             Event::End(Tag::CodeBlock(_language)) => {
-                write_on_single_line(&mut output, br"\end{verbatim}", &mut newlines).unwrap();
+                // No need to write a newline as the contents of code blocks already ends with one.
+                output.write_all(br"\end{verbatim}").unwrap();
+                output.add_newlines(1);
             }
 
             Event::Start(Tag::List(None)) => {
-                write_on_single_line(&mut output, br"\begin{itemize}", &mut newlines).unwrap();
+                output.on_single_line(br"\begin{itemize}").unwrap();
+                output.increase_indent();
+                output.increase_indent();
             }
             Event::End(Tag::List(None)) => {
-                write_on_single_line(&mut output, br"\end{itemize}", &mut newlines).unwrap();
+                output.decrease_indent();
+                output.decrease_indent();
+                output.on_single_line(br"\end{itemize}").unwrap();
             }
 
             Event::Start(Tag::List(Some(_first_number))) => {
                 // TODO: use first_number
-                write_on_single_line(&mut output, br"\begin{enumerate}", &mut newlines).unwrap();
+                output.on_single_line(br"\begin{enumerate}").unwrap();
+                output.increase_indent();
+                output.increase_indent();
             }
             Event::End(Tag::List(Some(_first_number))) => {
-                write_on_single_line(&mut output, br"\end{enumerate}", &mut newlines).unwrap();
+                output.decrease_indent();
+                output.decrease_indent();
+                output.on_single_line(br"\end{enumerate}").unwrap();
             }
 
             Event::Start(Tag::Item) => {
-                write_on_single_line(&mut output, br"\item", &mut newlines).unwrap();
+                output.add_newlines(1);
+                output.decrease_indent();
+                output.write_all(br"\item ").unwrap();
+                output.increase_indent();
+                output.limit_newlines(0);
             }
             Event::End(Tag::Item) => {}
 
@@ -130,49 +149,46 @@ fn main() {
             }
 
             Event::Start(Tag::Emphasis) => {
-                write_inline(&mut output, br"\emph{", &mut newlines).unwrap();
+                output.write_all(br"\emph{").unwrap();
             }
             Event::End(Tag::Emphasis) => {
-                write_inline(&mut output, br"}", &mut newlines).unwrap();
+                output.write_all(br"}").unwrap();
             }
 
             Event::Start(Tag::Strong) => {
-                write_inline(&mut output, br"\textbf{", &mut newlines).unwrap();
+                output.write_all(br"\textbf{").unwrap();
             }
             Event::End(Tag::Strong) => {
-                write_inline(&mut output, br"}", &mut newlines).unwrap();
+                output.write_all(br"}").unwrap();
             }
 
             Event::Start(Tag::Strikethrough) => {
                 // TODO: requires package `ulem`
-                write_inline(&mut output, br"\sout{", &mut newlines).unwrap();
+                output.write_all(br"\sout{").unwrap();
             }
             Event::End(Tag::Strikethrough) => {
-                write_inline(&mut output, br"}", &mut newlines).unwrap();
+                output.write_all(br"}").unwrap();
             }
 
             Event::Start(Tag::Link(LinkType::Inline, url, CowStr::Borrowed(""))) => {
-                write_inline(&mut output, br"\href{", &mut newlines).unwrap();
-                write_inline(&mut output, url.as_bytes(), &mut newlines).unwrap(); // TODO: escape
+                output.write_all(br"\href{").unwrap();
+                output.write_all(url.as_bytes()).unwrap(); // TODO: escape
             }
             Event::End(Tag::Link(LinkType::Inline, _url, CowStr::Borrowed(""))) => {
-                write_inline(&mut output, br"}", &mut newlines).unwrap();
+                output.write_all(br"}").unwrap();
             }
             Event::Start(Tag::Link(_, _, _)) => unimplemented!("Non-inline Link"),
             Event::End(Tag::Link(_, _, _)) => panic!(),
 
             Event::Start(Tag::Image(LinkType::Inline, url, CowStr::Borrowed(""))) => {
                 // TODO: download and name image
-                write_soft_line_break(&mut output, &mut newlines).unwrap();
-                write_inline(
-                    &mut output,
-                    br"\includegraphics[\textwidth]{",
-                    &mut newlines,
-                )
-                .unwrap();
-                write_inline(&mut output, &*url.as_bytes(), &mut newlines).unwrap();
-                write_inline(&mut output, b"}", &mut newlines).unwrap();
-                write_soft_line_break(&mut output, &mut newlines).unwrap();
+                output.add_newlines(1);
+                output
+                    .write_all(br"\includegraphics[width=\textwidth]{")
+                    .unwrap();
+                output.write_all(&*url.as_bytes()).unwrap();
+                output.write_all(b"}").unwrap();
+                output.add_newlines(1);
                 assert_eq!(
                     parser.next(),
                     Some(Event::End(Tag::Image(
@@ -186,13 +202,13 @@ fn main() {
             Event::Start(Tag::Image(_, _, _)) => unimplemented!("Non-inline Image"),
 
             Event::Text(text) => {
-                write_escaped_inline(&mut output, &text, &mut newlines).unwrap();
+                output.write_all_escaped(&text).unwrap();
             }
 
             Event::Code(text) => {
-                write_inline(&mut output, br"\texttt{", &mut newlines).unwrap();
-                write_escaped_inline(&mut output, &text, &mut newlines).unwrap();
-                write_inline(&mut output, br"}", &mut newlines).unwrap();
+                output.write_all(br"\texttt{").unwrap();
+                output.write_all_escaped(&text).unwrap();
+                output.write_all(br"}").unwrap();
             }
 
             Event::Html(_) => {
@@ -200,17 +216,16 @@ fn main() {
             }
 
             Event::SoftBreak => {
-                write_soft_line_break(&mut output, &mut newlines).unwrap();
+                output.add_newlines(1);
             }
 
             Event::HardBreak => {
-                write_inline(&mut output, b" \\", &mut newlines).unwrap();
-                write_soft_line_break(&mut output, &mut newlines).unwrap();
+                output.write_all(b" \\").unwrap();
+                output.add_newlines(1);
             }
 
             Event::Rule => {
-                write_on_single_line(&mut output, br"\par\noindent\hrulefill\par", &mut newlines)
-                    .unwrap();
+                output.write_all(br"\par\noindent\hrulefill\par").unwrap();
             }
 
             Event::TaskListMarker(_checked) => {
@@ -218,71 +233,6 @@ fn main() {
             }
         }
     }
+
+    output.get_mut().write_all(b"\n").unwrap();
 }
-
-#[inline(always)]
-fn write_escaped_inline(
-    output: &mut impl Write,
-    text: &str,
-    existing_newlines: &mut u32,
-) -> std::result::Result<(), std::io::Error> {
-    // TODO: implement escaping
-    output.write_all(text.as_bytes())?;
-    *existing_newlines = 0;
-    Ok(())
-}
-
-#[inline(always)]
-fn write_soft_line_break(
-    output: &mut impl Write,
-    existing_newlines: &mut u32,
-) -> Result<(), std::io::Error> {
-    if *existing_newlines == 0 {
-        output.write_all(b"\n")?;
-        *existing_newlines = 1;
-    }
-
-    Ok(())
-}
-
-#[inline(always)]
-fn write_paragraph_break(
-    output: &mut impl Write,
-    existing_newlines: &mut u32,
-) -> Result<(), std::io::Error> {
-    if *existing_newlines < 2 {
-        output.write_all(&b"\n\n"[0..(2 - *existing_newlines) as usize])?;
-        *existing_newlines = 2;
-    }
-
-    Ok(())
-}
-
-#[inline(always)]
-fn write_inline(
-    output: &mut impl Write,
-    buf: &[u8],
-    existing_newlines: &mut u32,
-) -> Result<(), std::io::Error> {
-    output.write_all(buf)?;
-    *existing_newlines = 0;
-    Ok(())
-}
-
-#[inline(always)]
-fn write_on_single_line(
-    output: &mut impl Write,
-    buf: &[u8],
-    existing_newlines: &mut u32,
-) -> Result<(), std::io::Error> {
-    if *existing_newlines == 0 {
-        output.write_all(b"\n")?;
-    }
-    output.write_all(buf)?;
-    output.write_all(b"\n")?;
-    *existing_newlines = 1;
-    Ok(())
-}
-
-#[cfg(test)]
-mod test {}
