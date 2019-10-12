@@ -1,7 +1,7 @@
-use std::io::prelude::*;
-use log::{debug, warn};
 use latex_escape::LatexEscaper;
-use pulldown_cmark::{CowStr, Event, LinkType, Options, Parser, Tag};
+use log::{debug, warn};
+use pulldown_cmark::{Event, LinkType, Options, Parser, Tag};
+use std::io::prelude::*;
 
 mod latex_escape;
 
@@ -15,14 +15,17 @@ const HEADINGS: [(&[u8], u32); 4] = [
 const MAX_ENUMERATE_NESTING: u32 = 4;
 const LOWER_ROMAN: [&str; MAX_ENUMERATE_NESTING as usize] = ["i", "ii", "iii", "iv"];
 
-
 pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std::io::Error> {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_TASKLISTS);
+    options.insert(Options::ENABLE_LATEX);
     let mut parser = Parser::new_ext(input, options);
 
     let mut output = LatexEscaper::new(output);
+    output.write_all(include_bytes!("preamble.tex"))?;
+    output.limit_newlines(2);
+    output.add_newlines(2);
 
     let mut enumerate_nesting = 0;
 
@@ -116,9 +119,6 @@ pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std
             Event::End(Tag::Item) => {}
 
             Event::TaskListMarker(checked) => {
-                // TODO: in preamble, define `\checkedbox` as:
-                // \mbox{\ooalign{$\square$\cr\hidewidth\raisebox{.45ex}{\hspace{0.2em}$\checkmark$}\hidewidth\cr}}
-                // and `\uncheckedbox` as $\square$
                 let code: &[u8] = if checked {
                     br"[\checkedbox] "
                 } else {
@@ -166,18 +166,18 @@ pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std
             }
 
             Event::Start(Tag::Strikethrough) => {
-                // TODO: requires package `ulem`
                 output.write_all(br"\sout{")?;
             }
             Event::End(Tag::Strikethrough) => {
                 output.write_all(br"}")?;
             }
 
-            Event::Start(Tag::Link(LinkType::Inline, url, CowStr::Borrowed(""))) => {
+            Event::Start(Tag::Link(LinkType::Inline, url, _title)) => {
                 output.write_all(br"\href{")?;
                 output.write_all(url.as_bytes())?; // TODO: escape
+                output.write_all(br"}{")?;
             }
-            Event::End(Tag::Link(LinkType::Inline, _url, CowStr::Borrowed(""))) => {
+            Event::End(Tag::Link(LinkType::Inline, _url, _title)) => {
                 output.write_all(br"}")?;
             }
             Event::Start(Tag::Link(_, _, _)) => {
@@ -185,7 +185,7 @@ pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std
             }
             Event::End(Tag::Link(_, _, _)) => panic!(),
 
-            Event::Start(Tag::Image(LinkType::Inline, url, CowStr::Borrowed(""))) => {
+            Event::Start(Tag::Image(LinkType::Inline, url, _title)) => {
                 // TODO: download and name image
                 output.add_newlines(1);
                 output.write_all(br"\includegraphics[width=\textwidth]{")?;
@@ -194,11 +194,7 @@ pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std
                 output.add_newlines(1);
                 assert_eq!(
                     parser.next(),
-                    Some(Event::End(Tag::Image(
-                        LinkType::Inline,
-                        url,
-                        CowStr::from("")
-                    )))
+                    Some(Event::End(Tag::Image(LinkType::Inline, url, _title)))
                 );
             }
             Event::End(Tag::Image(_, _, _)) => panic!(),
@@ -216,6 +212,12 @@ pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std
                 output.write_all(br"}")?;
             }
 
+            Event::Latex(text) => {
+                output.write_all(b"$")?;
+                output.write_all(text.as_bytes())?;
+                output.write_all(b"$")?;
+            }
+
             Event::Html(html) => {
                 warn!("Found an HTML tag. Including it verbatim in LaTeX output.");
                 output.write_all(br"\texttt{")?;
@@ -224,11 +226,15 @@ pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std
             }
 
             Event::SoftBreak => {
+                // We should not have to print " \\" here but Dropbox seems to abuse
+                // soft line breaks for hard line breaks.
+                // TODO: Make behavior dependent on whether or not the input comes from Dropbox.
+                output.write_all(br" \\")?;
                 output.add_newlines(1);
             }
 
             Event::HardBreak => {
-                output.write_all(b" \\")?;
+                output.write_all(br" \\")?;
                 output.add_newlines(1);
             }
 
@@ -238,7 +244,9 @@ pub fn markdown_to_latex(input: &str, output: &mut impl Write) -> Result<(), std
         }
     }
 
-    output.get_mut().write_all(b"\n")?;
+    output.limit_newlines(3);
+    output.add_newlines(3);
+    output.on_single_line(br"\end{document}")?;
 
     Ok(())
 }

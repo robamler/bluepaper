@@ -57,7 +57,7 @@ impl Default for Config {
 }
 
 fn run_cli(opt: Opt) -> Result<(), String> {
-    let (body, meta_data) = if let Some(path) = opt.input {
+    let (markdown, meta_data) = if let Some(path) = opt.input {
         if path == "-" {
             info!("Reading Markdown from STDIN ...");
             let mut input = BufReader::new(std::io::stdin());
@@ -67,7 +67,7 @@ fn run_cli(opt: Opt) -> Result<(), String> {
                 .map_err(|e| format!("Error reading from STDIN: {}", e))?;
             (input_string, None)
         } else {
-            info!("Reading Markdown from input file ...");
+            info!("Reading Markdown from file \"{}\" ...", &path);
             (
                 std::fs::read_to_string(path)
                     .map_err(|e| format!("Error reading input file: {}", e))?,
@@ -75,24 +75,27 @@ fn run_cli(opt: Opt) -> Result<(), String> {
             )
         }
     } else {
-        let (body, meta_data) = navigate_to_dropbox_paper()?;
+        let (markdown, meta_data) = navigate_to_dropbox_paper()?;
         info!("Downloaded Markdown for Document \"{}\".", meta_data.title);
-        (body, Some(meta_data))
+        (markdown, Some(meta_data))
     };
 
     // The dynamic dispatch shouldn't really hurt much here because we wrap `output`
     // in a BufWriter below, so writes to the inner `output` will be infrequent.
-    let output: Box<dyn Write> = if let Some(path) = opt.output {
+    let (mut latex_output, latex_path): (Box<dyn Write>, _) = if let Some(path) = opt.output {
         if path == "-" {
             info!("Printing LaTeX to STDOUT ...");
-            Box::new(std::io::stdout())
+            (Box::new(std::io::stdout()),None)
         } else {
             info!("Writing LaTeX to file \"{}\" ...", path); // TODO: always show if in interactive mode
-            Box::new(
-                std::fs::File::open(path).map_err(|e| format!("Cannot open output file: {}", e))?,
-            )
+            let latex_output = Box::new(
+                std::fs::File::create(&path)
+                    .map_err(|e| format!("Cannot open LaTeX output file: {}", e))?,
+            );
+            (latex_output, Some(path))
         }
     } else {
+        // Todo if "-i" is provided, set output file name according to that
         let title = meta_data
             .as_ref()
             .map(|m| &m.title[..])
@@ -120,12 +123,37 @@ fn run_cli(opt: Opt) -> Result<(), String> {
             .map_err(|e| format!("Could not open output file: {:?}", e))?;
         info!("Writing LaTeX to file \"{}\" ...", file_name); // TODO: always show if in interactive mode
 
-        Box::new(file)
+        (Box::new(file), Some(file_name))
     };
-    let mut output = BufWriter::new(output);
 
-    conversion::markdown_to_latex(&body, &mut output)
-        .map_err(|e| format!("IO Error on terminal output: {}", e))
+    if let Some(latex_path) = latex_path {
+        let mut latex = Vec::new();
+        conversion::markdown_to_latex(&markdown, &mut latex)
+            .map_err(|e| format!("Error in conversion from Markdown to LaTeX: {}", e))?;
+        latex_output.write_all(&latex)
+            .map_err(|e| format!("IO error when writing LaTeX file: {}", e))?;
+    
+        let basename = if latex_path.ends_with(".tex"){
+            &latex_path[0..latex_path.len()-4]
+        } else {
+            &latex_path
+        };
+        let pdf_path = format!("{}.pdf", basename);
+
+        info!("Compiling LaTeX code and generating PDF file \"{}\" ...", &pdf_path);
+        let mut pdf_output = std::fs::File::create(pdf_path)
+                .map_err(|e| format!("Cannot open PDF output file: {}", e))?;
+        let pdf_data = tectonic::latex_to_pdf(std::str::from_utf8(&latex).unwrap()) // TODO: avoid this unwrap
+            .map_err(|e| format!("LaTeX error: {}", e))?;
+        pdf_output.write_all(&pdf_data)
+            .map_err(|e| format!("IO error when writing PDF file: {}", e))?;
+    } else {
+        let mut latex_output = BufWriter::new(latex_output);
+        conversion::markdown_to_latex(&markdown, &mut latex_output)
+            .map_err(|e| format!("IO Error on terminal output: {}", e))?;
+    }
+
+    Ok(())
 }
 
 fn open_unique_file(
@@ -230,9 +258,9 @@ fn select_dropbox_paper(api_key: &str) -> Result<(String, PaperMetaData), String
         Vec::<Option<(String, PaperMetaData)>>::with_capacity(paper_list.doc_ids.len());
 
     for (i, doc_id) in paper_list.doc_ids.iter().enumerate() {
-        let (body, meta_data) = download_dropbox_paper(&client, api_key, doc_id);
+        let (markdown, meta_data) = download_dropbox_paper(&client, api_key, doc_id);
         println!("{:2}: {}", i + 1, meta_data.title);
-        recent_papers.push(Some((body, meta_data)));
+        recent_papers.push(Some((markdown, meta_data)));
     }
 
     println!();
