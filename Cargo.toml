@@ -7,8 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# pulldown-cmark = "0.6.0"
-pulldown-cmark = { path = "../pulldown-cmark", features = ["latex"] }
+pulldown-cmark = "0.6.0"
 log = { version = "0.4", features = ["std"] }
 structopt = "0.3.2"
 stderrlog = "0.4.1"

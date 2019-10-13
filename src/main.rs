@@ -128,7 +128,7 @@ fn run_cli(opt: Opt) -> Result<(), String> {
 
     if let Some(latex_path) = latex_path {
         let mut latex = Vec::new();
-        conversion::markdown_to_latex(&markdown, &mut latex)
+        conversion::markdown_to_latex(markdown, &mut latex)
             .map_err(|e| format!("Error in conversion from Markdown to LaTeX: {}", e))?;
         latex_output.write_all(&latex)
             .map_err(|e| format!("IO error when writing LaTeX file: {}", e))?;
@@ -149,7 +149,7 @@ fn run_cli(opt: Opt) -> Result<(), String> {
             .map_err(|e| format!("IO error when writing PDF file: {}", e))?;
     } else {
         let mut latex_output = BufWriter::new(latex_output);
-        conversion::markdown_to_latex(&markdown, &mut latex_output)
+        conversion::markdown_to_latex(markdown, &mut latex_output)
             .map_err(|e| format!("IO Error on terminal output: {}", e))?;
     }
 

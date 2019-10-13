@@ -70,17 +70,17 @@ impl<W: Write> LatexEscaper<W> {
         Ok(())
     }
 
-    pub fn write_all(&mut self, buf: &[u8]) -> Result<(), std::io::Error> {
+    pub fn write_str(&mut self, s: &str) -> Result<(), std::io::Error> {
         self.prepare_writing()?;
-        self.inner.write_all(buf)?;
+        self.inner.write_all(s.as_bytes())?;
         Ok(())
     }
 
-    pub fn write_all_escaped(&mut self, text: &str) -> std::result::Result<(), std::io::Error> {
+    pub fn write_escaped(&mut self, s: &str) -> std::result::Result<(), std::io::Error> {
         self.prepare_writing()?;
 
         unsafe {
-            let bytes = text.as_bytes();
+            let bytes = s.as_bytes();
             let mut i = 0usize;
 
             while i != bytes.len() {
@@ -131,9 +131,9 @@ impl<W: Write> LatexEscaper<W> {
         Ok(())
     }
 
-    pub fn on_single_line(&mut self, buf: &[u8]) -> Result<(), std::io::Error> {
+    pub fn write_on_single_line(&mut self, s: &str) -> Result<(), std::io::Error> {
         self.add_newlines(1);
-        self.write_all(buf)?;
+        self.write_str(s)?;
         self.add_newlines(1);
         Ok(())
     }
@@ -164,7 +164,7 @@ mod test {
         let dest = Vec::new();
         let mut escaper = LatexEscaper::new(dest);
         let src = "test … ellipsis ..., 2 dots .., hyphenation‧point, —em dash and–en dash";
-        escaper.write_all_escaped(src).unwrap();
+        escaper.write_escaped(src).unwrap();
 
         assert_eq!(
             std::str::from_utf8(escaper.get_ref()).unwrap(),
@@ -178,7 +178,7 @@ mod test {
         let dest = Vec::new();
         let mut escaper = LatexEscaper::new(dest);
         let src = r"   test   escaping $ and # and also & and % and_under{score}~or^caret \  ";
-        escaper.write_all_escaped(src).unwrap();
+        escaper.write_escaped(src).unwrap();
 
         assert_eq!(
             std::str::from_utf8(escaper.get_ref()).unwrap(),
