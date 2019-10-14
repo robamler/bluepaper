@@ -1,0 +1,11 @@
+[package]
+name = "bluepaper_core"
+version = "0.1.0"
+authors = ["Robert Bamler <robert.bamler@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pulldown-cmark = "0.6.0"
+log = "0.4"

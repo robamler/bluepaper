@@ -1,0 +1,18 @@
+[package]
+name = "bluepaper"
+version = "0.1.0"
+authors = ["Robert Bamler <robert.bamler@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bluepaper_core = { path = "../core" }
+log = "0.4"
+structopt = "0.3.2"
+stderrlog = "0.4.1"
+reqwest = "0.9.21"
+serde = "1.0.101"
+serde_json = "1.0.41"
+confy = "0.3.1"
+tectonic = "0.1.11"

@@ -1,5 +1,4 @@
-use std::io::prelude::*;
-use std::io::{BufReader, BufWriter};
+use bluepaper_core::MarkdownToLatex;
 
 use confy;
 use log::{debug, error, info};
@@ -7,7 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use structopt::StructOpt;
 
-pub mod conversion;
+use std::io::prelude::*;
+use std::io::{BufReader, BufWriter};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bluepaper", about = "Export Dropbox Paper documents to LaTeX.")]
@@ -85,7 +85,7 @@ fn run_cli(opt: Opt) -> Result<(), String> {
     let (mut latex_output, latex_path): (Box<dyn Write>, _) = if let Some(path) = opt.output {
         if path == "-" {
             info!("Printing LaTeX to STDOUT ...");
-            (Box::new(std::io::stdout()),None)
+            (Box::new(std::io::stdout()), None)
         } else {
             info!("Writing LaTeX to file \"{}\" ...", path); // TODO: always show if in interactive mode
             let latex_output = Box::new(
@@ -127,29 +127,31 @@ fn run_cli(opt: Opt) -> Result<(), String> {
     };
 
     if let Some(latex_path) = latex_path {
-        let mut latex = Vec::new();
-        conversion::markdown_to_latex(markdown, &mut latex)
-            .map_err(|e| format!("Error in conversion from Markdown to LaTeX: {}", e))?;
-        latex_output.write_all(&latex)
+        let latex = MarkdownToLatex::from_string(markdown).into_string();
+        latex_output
+            .write_all(latex.as_bytes())
             .map_err(|e| format!("IO error when writing LaTeX file: {}", e))?;
-    
-        let basename = if latex_path.ends_with(".tex"){
-            &latex_path[0..latex_path.len()-4]
+
+        let basename = if latex_path.ends_with(".tex") {
+            &latex_path[0..latex_path.len() - 4]
         } else {
             &latex_path
         };
         let pdf_path = format!("{}.pdf", basename);
 
-        info!("Compiling LaTeX code and generating PDF file \"{}\" ...", &pdf_path);
+        info!(
+            "Compiling LaTeX code and generating PDF file \"{}\" ...",
+            &pdf_path
+        );
         let mut pdf_output = std::fs::File::create(pdf_path)
-                .map_err(|e| format!("Cannot open PDF output file: {}", e))?;
-        let pdf_data = tectonic::latex_to_pdf(std::str::from_utf8(&latex).unwrap()) // TODO: avoid this unwrap
-            .map_err(|e| format!("LaTeX error: {}", e))?;
-        pdf_output.write_all(&pdf_data)
+            .map_err(|e| format!("Cannot open PDF output file: {}", e))?;
+        let pdf_data = tectonic::latex_to_pdf(latex).map_err(|e| format!("LaTeX error: {}", e))?;
+        pdf_output
+            .write_all(&pdf_data)
             .map_err(|e| format!("IO error when writing PDF file: {}", e))?;
     } else {
-        let mut latex_output = BufWriter::new(latex_output);
-        conversion::markdown_to_latex(markdown, &mut latex_output)
+        MarkdownToLatex::from_string(markdown)
+            .write_to(BufWriter::new(latex_output))
             .map_err(|e| format!("IO Error on terminal output: {}", e))?;
     }
 
