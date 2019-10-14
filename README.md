@@ -1,6 +1,6 @@
 # Bluepaper
 
-Bluepaper is a small and not quite functional tool to export Dropbox Paper documents to valid and clean LaTeX code.
+Bluepaper is a small and not quite yet functional tool to export Dropbox Paper documents to valid and clean LaTeX code.
 
 Bluepaper uses the excellent [pulldown-cmark](https://crates.io/crates/pulldown-cmark) Rust crate and adds some Dropbox-specific preprocessing and a generator for clean LaTeX code.
 It will soon also include a packager that will deal with included images, and it will provide this functionality via both a command line interface and a client side web app (via WebAssembly).
@@ -34,14 +34,15 @@ The backend in directory `core` is fairly stable.
 There's a draft command line interface application in the directory `cli` that technically works but it's a bit rough around the edges, and it currently lacks support for included images.
 An installation free "wasm" based web frontend will come soon.
 
-
-## Todo
+### Todo
 
 - [ ] Add wasm frontend with basic Markdown --> LaTeX support.
 - [ ] Use Dropbox REST API in wasm frontend (as an optional feature).
 - [ ] Download images included in documents, and include them in the generated LaTeX (convert to a supported format if necessary).
 
 
-## License
+## Legal
 
-[MIT License](LICENSE)
+- The source code of Bluepaper is released under the [MIT License](LICENSE).
+- Dropbox and Dropbox Paper are trademarks or registered trademarks of Dropbox, Inc.
+  I'm not affiliated with Dropbox.
