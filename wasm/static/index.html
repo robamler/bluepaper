@@ -35,12 +35,24 @@
       font-family: 'Gabriela', sans-serif;
     }
 
+    textarea {
+      font-family: monospace;
+      width: 100%;
+      height: 100%;
+      min-height: 15em;
+      margin-right: 1em;
+      background-color: #4f6ba8;
+      border: solid 0.1em #fff;
+      padding: 0.4em;
+      color: #fff;
+    }
+
     body {
       font-size: 20px;
       background-color: #385083;
       color: #fff;
       margin: 0;
-      padding: 0 1em;
+      padding: 0;
     }
 
     a {
@@ -57,6 +69,16 @@
     h2 {
       font-family: 'IM Fell English', serif;
       font-weight: bold;
+      letter-spacing: 0.04em;
+    }
+
+    @-moz-document url-prefix() {
+
+      h1,
+      h2,
+      h3 {
+        letter-spacing: 0;
+      }
     }
 
     h1 {
@@ -74,6 +96,12 @@
     }
 
     h3 {
+      font-size: 180%;
+      margin: 0.1em 0 0.3em 0;
+      padding: 0;
+    }
+
+    h4 {
       display: inline-block;
       margin: 0;
       font-size: 100%;
@@ -135,6 +163,150 @@
       border-radius: 0.3em;
     }
 
+    .doc_list {
+      display: none;
+      max-height: 50vh;
+      overflow-y: auto;
+      list-style: none;
+      margin: -0.3em -0.3em 0.3em -0.3em;
+      padding: 0;
+    }
+
+    .doc_list>table {
+      table-layout: fixed;
+      width: 100%;
+      border-spacing: 0;
+    }
+
+    tr.document>td {
+      vertical-align: top;
+      cursor: pointer;
+    }
+
+    tr.document:hover>td {
+      background-color: #4864a1;
+    }
+
+    tr.document.selected>td {
+      background-color: #4f6ba8;
+    }
+
+    td.list_icon {
+      width: 1.3em;
+      padding: 0.5em 0.3em;
+    }
+
+    .list_icon>img {
+      width: 1.3em;
+      display: block;
+    }
+
+    td.list_text {
+      font-size: 80%;
+      padding: 0.5em 0.2em;
+      font-weight: bold;
+    }
+
+    tr.wait>td {
+      vertical-align: middle;
+      cursor: default;
+      font-weight: normal;
+      color: #d5dbe7;
+    }
+
+    tr.error {
+      display: none
+    }
+
+    tr.error>td {
+      cursor: default;
+    }
+
+    .doc_owner {
+      font-size: 80%;
+      color: #d5dbe7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 0.1em;
+      font-weight: normal;
+    }
+
+    .doc_owner:before {
+      content: 'Owner: '
+    }
+
+    .steps>.result {
+      display: none;
+      margin: 1.5em 0.6em 0 0;
+    }
+
+    .steps.active>.result {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .steps>.result.solo {
+      margin: 0 0.6em 0 0;
+      width: 100%;
+    }
+
+    .v-stretch {
+      flex: 1;
+    }
+
+    .main {
+      position: absolute;
+      padding: 0 1em;
+    }
+
+    .main.blurred {
+      filter: blur(0.2em);
+    }
+
+    .drop-feedback {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      transition: opacity 0.2s;
+    }
+
+    .hide-background {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #fff;
+      opacity: 0.7;
+    }
+
+    .drop-art {
+      position: absolute;
+      left: 1.5em;
+      top: 1.5em;
+      right: 1.5em;
+      bottom: 1.5em;
+      border-radius: 3em;
+      border: 0.6em dashed #385083;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .drop-art>div {
+      position: absolute;
+      margin: 0;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #385083;
+      font-size: 300%;
+      font-weight: bold;
+    }
+
     @media (min-width: 48em) {
       h1 {
         font-size: 300%;
@@ -156,10 +328,24 @@
         width: 100%;
         margin: 0 0.5em;
       }
+
+      .steps {
+        display: flex;
+        flex-wrap: nowrap;
+      }
+
+      .steps.active>.first-step {
+        width: 33%;
+      }
+
+      .steps>.result {
+        width: 67%;
+        margin: 0 1em 0 2em;
+      }
     }
 
     @media (min-width: 65em) {
-      body {
+      .main {
         padding: 0.3em 1.5em;
       }
 
@@ -255,6 +441,30 @@
       text-align: center;
     }
 
+    .highlighter {
+      margin: -0.6em;
+      padding: 0.6em;
+    }
+
+    .highlight {
+      animation: highlighting 4000ms ease-in-out;
+    }
+
+    @keyframes highlighting {
+
+      0%,
+      20%,
+      100% {
+        background-color: #385083;
+      }
+
+      10%,
+      30%,
+      70% {
+        background-color: #4864a1
+      }
+    }
+
     .github-corner>svg {
       width: 5em;
       height: 5em;
@@ -301,109 +511,163 @@
 
 <body>
   <script src="index.js"></script>
+  <div class="main" id="main">
+    <a href="https://github.com/robamler/bluepaper" class="github-corner" aria-label="View source code on GitHub"
+      title="View source code on GitHub"><svg width="80" height="80" viewBox="0 0 250 250"
+        style="fill:#fff; color:#22386d; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+        <path
+          d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+          fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+        <path
+          d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+          fill="currentColor" class="octo-body"></path>
+      </svg>
+    </a>
 
-  <a href="https://github.com/robamler/bluepaper" class="github-corner" aria-label="View source code on GitHub"
-    title="View source code on GitHub"><svg width="80" height="80" viewBox="0 0 250 250"
-      style="fill:#fff; color:#22386d; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
-      <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
-      <path
-        d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
-        fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
-      <path
-        d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
-        fill="currentColor" class="octo-body"></path>
-    </svg>
-  </a>
+    <h1>Bluepaper</h1>
+    <header>
+      <p>Convert a <a target="_blank" href="https://paper.dropbox.com/">Dropbox Paper</a> document to
+        <span class="latex-logo">L<span class="a">a</span><span class="t">T</span><span class="e">e</span><span
+            class="x">X</span></span>.
+      </p>
+      <p id="choices-header">
+        You have three options:
+      </p>
+    </header>
 
-  <h1>Bluepaper</h1>
-  <header>
-    <p>Convert a <a target="_blank" href="https://paper.dropbox.com/">Dropbox Paper</a> document to
-      <span class="latex-logo">L<span class="a">a</span><span class="t">T</span><span class="e">e</span><span
-          class="x">X</span></span>.
-    </p>
-    <p>
-      You have three options:
-    </p>
-  </header>
+    <ul class="choices">
+      <li id="choice-oauth">
+        <h2>Either ...</h2>
+        <div class="steps">
+          <div class="first-step" id="first-step-doclist">
+            <p>Select a Paper document from your Dropbox account:</p>
+            <div id="authorization-container">
+              <div class="center">
+                <a class="button authorize" href="#" id="authorize">Grant Access</a>
+              </div>
+              <div class="center label-container">
+                <label for="remember">
+                  <input type="checkbox" id="remember" checked="checked">
+                  <svg class="checkbox" width="36" height="36" viewBox="0 0 36 36">
+                    <rect class="hover" style="fill:#5573b6;stroke:none" width="25.5" height="25.5" x="0" y="10" />
+                    <rect class="unchecked" style="fill:none;stroke:#fff;stroke-width:2.5;stroke-linejoin:miter"
+                      width="23" height="23" x="1.25" y="11.25" ry="0" />
+                    <g class="checked">
+                      <path style="fill:#fff;stroke:none;stroke-width:2.5;stroke-linejoin:miter"
+                        d="M 0,10 V 35.5 H 25.5 V 10 h -3.615234 l -0.865235,2.5 H 23 V 33 H 2.5 V 12.5 H 14.671875 L 15.539062,10 Z" />
+                      <path style="fill:none;stroke:#fff;stroke-width:2.7;stroke-linecap:butt;stroke-linejoin:miter"
+                        d="m 6,19.5 7,7 9,-26" />
+                    </g>
+                  </svg>and remember me
+                </label>
+              </div>
+              <p class="aside">
+                (No data will be transferred to any Bluepaper server.
+                See <a href="#privacy">privacy statement</a> below.)
+              </p>
+            </div>
+            <div class="doc_list" id="doc_list">
+              <table>
+                <tbody id="doc_table">
+                  <tr class="wait" id="wait-document" data-index="100000000">
+                    <td class="list_icon"><img src="wait-document.svg"></td>
+                    <td class="list_text">
+                      Retrieving list of documents&nbsp;...
+                    </td>
+                  </tr>
+                  <tr class="error" id="error-document">
+                    <td class="list_icon"><img src="error-document.svg"></td>
+                    <td class="list_text" id="error-document-text">
+                      Internet connectivity problem.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="result">
+            <h3>Your Generated <span class="latex-logo">L<span class="a">a</span><span class="t">T</span><span
+                  class="e">e</span><span class="x">X</span></span> Code:</h3>
+            <p class='v-stretch'>
+              <textarea readonly id="latex"></textarea>
+            </p>
+            <p>
+              <a class="button" href="#" id="copy">Copy to Clipboard</a>
+              &nbsp;or&nbsp;
+              <a class="button" href="#" id="download-zip">Generate ZIP File with <span class="latex-logo">L<span
+                    class="a">a</span><span class="t">T</span><span class="e">e</span><span class="x">X</span></span>
+                and
+                Figures</a><br />
+              <span id="confirm-copy" class="aside">✓ Text copied to clipboard.</span>
+            </p>
+            <p>
+              <a class="button" href="#" id="back-to-start">←&nbsp;Back to Start</a>
+            </p>
+          </div>
+        </div>
+      </li>
+      <li id="choice-manual">
+        <h2>... or ...</h2>
+        <p>Manually export your Paper document to Markdown:</p>
+        <p><img src="export.svg" class="export"
+            alt='Select "Export" from the "..." menu in the Dropbox Paper document.'>
+        </p>
+        <p>Then drag and drop the Markdown file anywhere into this page or click:
+        </p>
+        <p class="center">
+          <input type="file" id="files" class="hidden" />
+          <a class="button" href="#" id="open" onclick="document.getElementById('files').click()">Open Markdown
+            File</a>
+        </p>
+      </li>
+      <li id="choice-cli">
+        <h2>... or</h2>
+        <p>Download the Bluepaper command line interface app for Linux, Mac, or Windows.</p>
+        <p class="center"><a class="button download" href="download.html">Download App</a></p>
+      </li>
+    </ul>
+    <footer>
+      <h4>Having issues?</h4>
+      Please <a target="_blank" href="https://github.com/robamler/bluepaper/issues/new">let me know</a>.
+      <p></p>
 
-  <ul class="choices">
-    <li>
-      <h2>Either ...</h2>
-      <p>Select a Paper document from your Dropbox account:</p>
-      <div class="center">
-        <a class="button authorize" href="todo">Grant Access</a>
+      <div id="privacy" class="highlighter">
+        <h4>Privacy Statement:</h4>
+        <em>Your documents or Dropbox credentials will never be transferred to any Bluepaper server.</em>
+        Bluepaper runs directly on your own computer inside your web browser.
+        If you grant Bluepaper access to your Dropbox account then your browser will download a list of recently
+        modified
+        Paper
+        documents from Dropbox directly to your computer without going through any intermediary.
+        If you check the box labeled <em>"remember me"</em> then Bluepaper will store a small access token in a
+        so-called
+        cookie in
+        your browser so that you don't have to grant access again the next time you use Bluepaper.
+        Uncheck that box if you are using a shared computer or if you don't consent to cookies.
+        If you left the box checked unintentionally, don't worry: you can <a href="revoke.html">delete the cookie and
+          revoke
+          access permissions</a> at any time.
       </div>
-      <div class="center label-container">
-        <label for="remember">
-          <input type="checkbox" id="remember" checked="checked">
-          <svg class="checkbox" width="36" height="36" viewBox="0 0 36 36">
-            <rect class="hover" style="fill:#5573b6;stroke:none" width="25.5" height="25.5" x="0" y="10" />
-            <rect class="unchecked" style="fill:none;stroke:#fff;stroke-width:2.5;stroke-linejoin:miter" width="23"
-              height="23" x="1.25" y="11.25" ry="0" />
-            <g class="checked">
-              <path style="fill:#fff;stroke:none;stroke-width:2.5;stroke-linejoin:miter"
-                d="M 0,10 V 35.5 H 25.5 V 10 h -3.615234 l -0.865235,2.5 H 23 V 33 H 2.5 V 12.5 H 14.671875 L 15.539062,10 Z" />
-              <path style="fill:none;stroke:#fff;stroke-width:2.7;stroke-linecap:butt;stroke-linejoin:miter"
-                d="m 6,19.5 7,7 9,-26" />
-            </g>
-          </svg>and remember me
-        </label>
-      </div>
-      <p class="aside">
-        (No data will be transferred to any Bluepaper server.
-        See <a href="#privacy">privacy statement</a> below or inspect the <a target="_blank"
-          href="https://github.com/robamler/bluepaper">source
-          code</a> yourself.)
-      </p>
-    </li>
-    <li id="drop_zone">
-      <h2>... or ...</h2>
-      <p>Manually export a Paper document to Markdown:</p>
-      <p><img src="export.svg" class="export" alt='Select "Export" from the "..." menu in the Dropbox Paper document.'>
-      </p>
-      <p>Then drag and drop the Markdown file anywhere into this page or click:
-      </p>
-      <p class="center">
-        <input type="file" id="files" class="hidden" />
-        <a class="button" href="#" id="open" onclick="document.getElementById('files').click()">Open Markdown
-          File</a>
-      </p>
-    </li>
-    <li>
-      <h2>... or</h2>
-      <p>Download the Bluepaper command line interface app for Linux, Mac, or Windows.</p>
-      <p class="center"><a class="button download" href="todo">Download App</a></p>
-    </li>
-  </ul>
-  <footer>
-    <h3>Having issues?</h3>
-    Please <a target="_blank" href="https://github.com/robamler/bluepaper/issues/new">let me know</a>.
-    <p></p>
 
-    <h3 id="privacy">Privacy Statement:</h3>
-    <em>Your documents or Dropbox credentials will never be transferred to any Bluepaper server.</em>
-    Bluepaper runs directly on your own computer using web technologies.
-    If you grant Bluepaper access to your Dropbox account then your browser will download a list of recently modified
-    Paper
-    documents from Dropbox directly to your computer without going through any intermediary.
-    If you check the box labeled <em>"remember me"</em> then Bluepaper will store a small access token in a so-called
-    cookie in
-    your browser so that you don't have to grant access again the next time you use Bluepaper.
-    Uncheck that box if you are using a shared computer or if you don't consent to cookies.
-    If you left the box checked unintentionally, don't worry: you can <a href="todo">delete the cookie and revoke
-      access
-      permissions</a> at any time.
+      <p></p>
+      <h4>License &amp; Copyright:</h4>
+      Bluepaper is open source software, published under <a
+        href="https://github.com/robamler/bluepaper/blob/master/LICENSE">MIT License</a>.
+      It is mainly maintained by <a href="https://robamler.github.io/">Robert Bamler</a>, but it builds on libraries
+      from many other authors.
+      Feel free to <a href="https://github.com/robamler/bluepaper/">inspect the source code</a>, <a
+        href="https://github.com/robamler/bluepaper/issues/new">ask for a new feature</a>, or <a
+        href="https://github.com/robamler/bluepaper/pulls">implement new features yourself</a>.
+    </footer>
+  </div>
 
-    <p></p>
-    <h3>License &amp; Copyright:</h3>
-    Bluepaper is open source software, published under <a
-      href="https://github.com/robamler/bluepaper/blob/master/LICENSE">MIT License</a>.
-    It is mainly maintained by <a href="https://robamler.github.io/">Robert Bamler</a>, but it builds on libraries
-    from many other authors.
-    Feel free to <a href="https://github.com/robamler/bluepaper/">inspect the source code</a>, <a
-      href="https://github.com/robamler/bluepaper/issues/new">ask for a new feature</a>, or <a
-      href="https://github.com/robamler/bluepaper/pulls">implement new features yourself</a>.
-  </footer>
+  <div class="drop-feedback" id="drop-feedback">
+    <div class="hide-background"></div>
+    <div class="drop-art">
+      <div>Drop Markdown file here.</div>
+    </div>
+  </div>
 </body>
 
 </html>

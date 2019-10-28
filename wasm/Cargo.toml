@@ -24,7 +24,6 @@ default = ["wee_alloc"]
 
 [dependencies]
 bluepaper_core = { path = "../core" }
-zip = { version = "0.5.3", default-features = false }
 
 # The `wasm-bindgen` crate provides the bare minimum functionality needed
 # to interact with JavaScript.

@@ -11,10 +11,13 @@ module.exports = {
   },
   output: {
     path: dist,
-    filename: "[name].js"
+    filename: "[name].js",
+    libraryTarget: 'var',
+    library: 'jsmodule'
   },
   devServer: {
     contentBase: dist,
+    https: true,
   },
   plugins: [
     new CopyPlugin([
