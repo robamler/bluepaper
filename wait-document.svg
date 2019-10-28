@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 18.265699 23.17939" height="23.17939mm" width="18.265699mm">
+   <path d="M 17.47195,6.8508202 v 0 h 0 v 0 h 0 l 0,0 0,0 v 0" style="fill:none;stroke:#d5dbe7;stroke-width:1.19062495;stroke-linecap:round;stroke-linejoin:round">
+      <animate attributeName="d" begin="0s" dur="3s" keyTimes="0;0.091;0.19;0.316;0.379;0.429;0.464;0.5;1" calcMode="linear" repeatCount="indefinite" values="M 17.47195,6.8508202 v 0 h 0 v 0 h 0 l 0,0 0,0 v 0;
+      M 17.47195,6.8508202 v 15.5348198 h 0 v 0 h 0 l 0,0 0,0 v 0;
+      M 17.47195,6.8508202 v 15.5348198 h -16.6782 v 0 h 0 l 0,0 0,0 v 0;
+      M 17.47195,6.8508202 v 15.5348198 h -16.6782 v -21.59189 h 0 l 0,0 0,0 v 0;
+      M 17.47195,6.8508202 v 15.5348198 h -16.6782 v -21.59189 h 10.62113 l 0,0 0,0 v 0;
+      M 17.47195,6.8508202 v 15.5348198 h -16.6782 v -21.59189 h 10.62113 l 6.05707,6.05707 0,0 v 0;
+      M 17.47195,6.8508202 v 15.5348198 h -16.6782 v -21.59189 h 10.62113 l 6.05707,6.05707 -6.05707,0 v 0;
+      M 17.47195,6.8508202 v 15.5348198 h -16.6782 v -21.59189 h 10.62113 l 6.05707,6.05707 -6.05707,0 v -6.05707;
+      M 17.47195,6.8508202 v 15.5348198 h -16.6782 v -21.59189 h 10.62113 l 6.05707,6.05707 -6.05707,0 v -6.05707" />
+   </path>
+   <circle r="0" cy="5.379107" cx="5.568161" style="fill:#d5dbe7;stroke:none">
+      <animate attributeName="r" begin="0s" dur="3s" keyTimes="0;0.2;0.45;1" calcMode="linear" repeatCount="indefinite" values="0;0;1.47;1.47" />
+   </circle>
+   <path d="M 3.54353,10.65426" style="fill:none;stroke:#d5dbe7;stroke-width:1.19062495;stroke-linecap:butt">
+      <animate attributeName="d" begin="0s" dur="3s" keyTimes="0;0.35;0.6;1" calcMode="linear" repeatCount="indefinite" values="M 3.54353,10.65426 h 0;M 3.54353,10.65426 h 0;M 3.54353,10.65426 h 11.17864;M 3.54353,10.65426 h 11.17864" />
+   </path>
+   <path d="M 3.54353,14.36667" style="fill:none;stroke:#d5dbe7;stroke-width:1.19062495;stroke-linecap:butt">
+      <animate attributeName="d" begin="0s" dur="3s" keyTimes="0;0.5;0.75;1" calcMode="linear" repeatCount="indefinite" values="M 3.54353,14.36667 h 0;M 3.54353,14.36667 h 0;M 3.54353,14.36667 h 11.17864;M 3.54353,14.36667 h 11.17864" />
+   </path>
+   <path d="M 3.54353,18.07909" style="fill:none;stroke:#d5dbe7;stroke-width:1.19062495;stroke-linecap:butt">
+      <animate attributeName="d" begin="0s" dur="3s" keyTimes="0;0.65;0.9;1" calcMode="linear" repeatCount="indefinite" values="M 3.54353,18.07909 h 0;M 3.54353,18.07909 h 0;M 3.54353,18.07909 h 11.17864;M 3.54353,18.07909 h 11.17864" />
+   </path>
+</svg>
