@@ -159,7 +159,7 @@
       display: block;
       margin: 0 0 1.5em 0;
       padding: 0.6em 0.6em 0 0.6em;
-      border: 0.1em solid #fff;
+      border: 0.05em solid #fff;
       border-radius: 0.3em;
     }
 
@@ -307,7 +307,7 @@
       font-weight: bold;
     }
 
-    @media (min-width: 48em) {
+    @media (min-width: 40em) {
       h1 {
         font-size: 300%;
         margin: 20px 0 0 0;
@@ -335,11 +335,11 @@
       }
 
       .steps.active>.first-step {
-        width: 33%;
+        width: 40%;
       }
 
       .steps>.result {
-        width: 67%;
+        width: 60%;
         margin: 0 1em 0 2em;
       }
     }
@@ -368,10 +368,10 @@
       color: #fff;
       text-align: center;
       padding: 0.2em 0.6em;
+      margin: 0.2em 0;
       border: 0.1em solid #7e94c5;
       border-radius: 0.2em;
       text-decoration: none;
-      white-space: nowrap;
       font-size: 100%;
     }
 
@@ -387,11 +387,10 @@
     }
 
     .label-container {
-      margin: 0.4em 0 1.5em 0;
+      margin-bottom: 1.3em;
     }
 
     label {
-      margin-top: 0.4em;
       font-size: 80%;
     }
 
@@ -531,9 +530,6 @@
         <span class="latex-logo">L<span class="a">a</span><span class="t">T</span><span class="e">e</span><span
             class="x">X</span></span>.
       </p>
-      <p id="choices-header">
-        You have three options:
-      </p>
     </header>
 
     <ul class="choices">
@@ -603,7 +599,7 @@
         </div>
       </li>
       <li id="choice-manual">
-        <h2>... or ...</h2>
+        <h2>... or</h2>
         <p>Manually export your Paper document to Markdown:</p>
         <p><img src="export.svg" class="export"
             alt='Select "Export" from the "..." menu in the Dropbox Paper document.'>
@@ -615,11 +611,6 @@
           <a class="button" href="#" id="open" onclick="document.getElementById('files').click()">Open Markdown
             File</a>
         </p>
-      </li>
-      <li id="choice-cli">
-        <h2>... or</h2>
-        <p>Download the Bluepaper command line interface app for Linux, Mac, or Windows.</p>
-        <p class="center"><a class="button download" href="download.html">Download App</a></p>
       </li>
     </ul>
     <footer>
