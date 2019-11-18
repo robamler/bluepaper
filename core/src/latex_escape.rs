@@ -16,7 +16,7 @@ const UTF8_ELLIPSIS_3: u8 = 0xA6;
 /// - Escapes common LaTeX control characters such as `\\`, `$`, `^`, `~`, ... so
 ///   that they appear as text and are not interpreted as LaTeX commands.
 /// - Replaces a few common special characters or character sequences such as
-///   en-dash (`–`), em-dash (`—`), and ellipsis (`…` or `...`) with their
+///   en-dash (`–`), em-dash (`—`), and ellipsis (`…` and `...`) with their
 ///   corresponding LaTeX commands.
 ///
 /// The replacement rules in neither group are exhaustive, so this method should not

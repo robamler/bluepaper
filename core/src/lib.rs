@@ -5,7 +5,8 @@
 //! crates are separated because cargo makes it a bit difficult to build both a wasm
 //! and a non-wasm binary from a single crate.
 //!
-//! The main struct in this library is [`MarkdownToLatex`](struct.MarkdownToLatex).
+//! The main struct in this library is
+//! [`MarkdownToLatex`](struct.MarkdownToLatex.html).
 
 pub mod format;
 pub mod latex_escape;
@@ -52,10 +53,10 @@ const LOWER_ROMAN: [&str; MAX_ENUMERATE_NESTING as usize] = ["i", "ii", "iii", "
 /// let markdown = "# Title\n\nText with a `code span`.".to_string();
 /// let mut converter = bluepaper_core::MarkdownToLatex::from_string(markdown);
 ///
-/// // `MarkdownToLatex` can write to any writer. We use a `Vec<u8>` here just for
-/// // demonstration. In a real application, `writer` could for example be a
-/// // `std::io::BufWriter<std::fs::File>`. If you really want to obtain the
-/// // generated LaTeX code in memory, use `MarkdownToLatex::into_string()` instead.
+/// // `MarkdownToLatex` can write to any writer. In a real application, `writer`
+/// // could, e.g., be a `std::io::BufWriter<std::fs::File>`. We use a `Vec<u8>`
+/// // here just for demonstration. Don't write to a `Vec<u8>` in a real
+/// // application, call `converter.into_string()` instead.
 /// let writer = Vec::<u8>::new();
 ///
 /// // `MarkdownToLatex::write_to` takes a writer, writes LaTeX to it,

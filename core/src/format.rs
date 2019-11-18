@@ -17,11 +17,11 @@ const NEWLINE_AND_INDENT: &[u8; (MAX_NEWLINES + MAX_INDENT) as usize] =
 /// The lazy injection of newlines is useful because it allows to fuse newlines from
 /// consecutive blocks of text. For example, consider writing a paragraph of text
 /// followed by a section header. We may want to have at least one blank line (i.e.,
-/// two newlines) after a paragraph of text, and we may want to always have two
+/// two newlines) below a paragraph of text, and we may want to always have two
 /// blank lines (i.e., three newlines) above every section header. Inserting these
 /// newlines eagerly would result in an excessive 2 + 3 = 5 newlines (i.e., four blank
 /// lines) above the section header. Instead, a `WhitespaceFormatter` fuses the
-/// consecutive space to just two blank lines:
+/// consecutive vertical space to just two blank lines:
 /// ```
 /// use bluepaper_core::format::WhitespaceFormatter;
 /// use std::io::prelude::*;
@@ -31,12 +31,12 @@ const NEWLINE_AND_INDENT: &[u8; (MAX_NEWLINES + MAX_INDENT) as usize] =
 ///
 /// // Write the paragraph of text without any newlines.
 /// formatter.write_all(b"Some paragraph of text.").unwrap();
-/// // Ensure that at least two newlines must follow a paragraph.
+/// // Ensure that at least two newlines must follow the paragraph.
 /// formatter.add_newlines(2);
 ///
-/// // ... some more code that may or may not write more paragraphs ...
+/// // ... some more code that may or may not write more stuff ...
 ///
-/// // Ensure that at least three newlines must precede a header.
+/// // Ensure that at least three newlines must precede the header.
 /// formatter.add_newlines(3);
 /// // Write the section header without any newlines.
 /// formatter.write_all(b"## Section Header");
