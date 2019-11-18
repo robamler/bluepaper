@@ -84,7 +84,7 @@ function onDomContentLoaded() {
         // Update the cookie's expiration date.
         document.cookie = (
             "bluepaper_dropbox_access_tokens=" + match[2]
-            + ";max-age=31536000;secure;samesite=strict"
+            + ";max-age=31536000;secure;samesite=lax"
         );
 
         const savedTokens = JSON.parse(decodeURIComponent(match[2]));

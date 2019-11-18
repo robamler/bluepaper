@@ -67,7 +67,7 @@
 
           document.cookie = (
             "bluepaper_dropbox_access_tokens=" + encodeURIComponent(JSON.stringify(savedTokens))
-            + ";path=/bluepaper/;max-age=31536000;secure;samesite=strict"
+            + ";path=/bluepaper/;max-age=31536000;secure;samesite=lax"
           );
         }
 
