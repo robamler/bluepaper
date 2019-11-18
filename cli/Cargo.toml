@@ -1,6 +1,6 @@
 [package]
 name = "bluepaper"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Robert Bamler <robert.bamler@gmail.com>"]
 edition = "2018"
 
