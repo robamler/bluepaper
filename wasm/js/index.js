@@ -203,7 +203,7 @@ function copyLatex(e) {
 
 function saveZip(e) {
     // Don't prevent default.
-    document.getElementById("confirm").innerText = '✓ Zip file saved (check "Downloads" directory).';
+    document.getElementById("confirm").innerText = '✓ ZIP file saved (check "Downloads" directory).';
     document.getElementById("confirm").style.visibility = "visible";
 }
 
