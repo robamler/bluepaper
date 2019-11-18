@@ -24,6 +24,9 @@ default = ["wee_alloc"]
 
 [dependencies]
 bluepaper_core = { path = "../core" }
+js-sys = "0.3.22"
+lazy_static = "1.4.0"
+zip = { version = "0.5.3", default-features = false }
 
 # The `wasm-bindgen` crate provides the bare minimum functionality needed
 # to interact with JavaScript.
@@ -51,5 +54,4 @@ console_error_panic_hook = "0.1.5"
 [dev-dependencies]
 wasm-bindgen-test = "0.2.45"
 futures = "0.1.27"
-js-sys = "0.3.22"
 wasm-bindgen-futures = "0.3.22"

@@ -378,7 +378,7 @@
     .button:active {
       background-color: #445e9c;
       border-width: 0.2em;
-      margin: -0.1em;
+      margin: 0.1em -0.1em;
     }
 
     a.button:hover {
@@ -589,8 +589,14 @@
               <textarea readonly id="latex"></textarea>
             </p>
             <p>
-              <a class="button" href="#" id="copy">Copy to Clipboard</a><br />
-              <span id="confirm-copy" class="aside">✓ Text copied to clipboard.</span>
+              <a class="button" href="#" id="copy">Copy <span class="latex-logo">L<span class="a">a</span><span
+                    class="t">T</span><span class="e">e</span><span class="x">X</span></span> to Clipboard</a>
+              <span id="wait-zip" class="aside">(processing included images&nbsp;...)</span>
+              <span id="save-zip-container">&nbsp;or&nbsp;
+                <a class="button" href="#" download="bluepaper.zip" id="save-zip">Save ZIP File with <span
+                    class="latex-logo">L<span class="a">a</span><span class="t">T</span><span class="e">e</span><span
+                      class="x">X</span></span> and Figures</a></span><br />
+              <span id="confirm" class="aside">Confirmation</span>
             </p>
             <p>
               <a class="button" href="#" id="back-to-start">←&nbsp;Back to Start</a>

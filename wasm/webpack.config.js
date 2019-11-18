@@ -25,6 +25,7 @@ module.exports = {
     ]),
 
     new WasmPackPlugin({
+      forceMode: "production",
       crateDirectory: __dirname,
       extraArgs: "--out-name index"
     }),

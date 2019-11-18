@@ -76,7 +76,7 @@ pub struct MarkdownToLatex {
 }
 
 impl MarkdownToLatex {
-    /// Create a new converter from a `String` of markdown.
+    /// Creates a new converter from a `String` of markdown.
     ///
     /// Takes ownership of `markdown` because it has to do some in-place
     /// preprocessing to handle LaTeX equations.
@@ -88,20 +88,57 @@ impl MarkdownToLatex {
         }
     }
 
-    /// Consume the converter and return a `String` of clean LaTeX code.
+    /// Consumes the converter and returns a `String` of LaTeX code without images.
+    ///
+    /// Comments out any generated `\includegraphics`. If you would like to generate
+    /// uncommented `\includegraphics`, use
+    /// [`into_string_with_image_callback`](#method.into_string_with_image_callback).
     pub fn into_string(self) -> String {
+        self.into_string_with_image_callback(&mut |_| None)
+    }
+
+    /// Consumes the converter and returns a `String` of LaTeX code with images.
+    ///
+    /// Calls the callback `f` for each encountered image. The argument of `f` is the
+    /// URL of the image and `f` must return the path to an image file and a bool. If
+    /// the bool returned by `f` is `true` then an uncommented `\includegraphics` will
+    /// be generated. If it is `false`, then the `\includegraphics` will be generated
+    /// but commented out.
+    pub fn into_string_with_image_callback(self, f: &mut dyn FnMut(&str) -> Option<String>) -> String {
         unsafe {
             let mut latex = Vec::new();
-            self.write_to(&mut latex).unwrap();
+            self.write_to_with_image_callback(&mut latex, f).unwrap();
             String::from_utf8_unchecked(latex)
         }
     }
 
-    /// Consume the converter and write clean LaTeX code to `writer`.
+    /// Consumes the converter and writes LaTeX code without images to `writer`.
     ///
-    /// The written output is guaranteed to be valid UTF-8. Hands back
-    /// ownership of the writer when it's done.
-    pub fn write_to<W: Write>(mut self, mut writer: W) -> std::io::Result<W> {
+    /// Comments out any generated `\includegraphics`. If you would like to generate
+    /// uncommented `\includegraphics`, use
+    /// [`write_to_with_image_callback`](#method.write_to_with_image_callback).
+    ///
+    /// Hands back ownership of the writer when it's done. The written output is
+    /// guaranteed to be valid UTF-8.
+    pub fn write_to<W: Write>(self, writer: W) -> std::io::Result<W> {
+        self.write_to_with_image_callback(writer, &mut |_| None)
+    }
+
+    /// Consumes the converter and writes LaTeX with images code to `writer`.
+    ///
+    /// Calls the `image_callback` for each encountered image. The argument of
+    /// `image_callback` is the URL of the image and `image_callback` must return the
+    /// path to an image file and a bool. If the bool returned by `image_callback` is
+    /// `true` then an uncommented `\includegraphics` will be generated. If it is
+    /// `false`, then the `\includegraphics` will be generated but commented out.
+    ///
+    /// Hands back ownership of the writer when it's done. The written output is
+    /// guaranteed to be valid UTF-8.
+    pub fn write_to_with_image_callback<W: Write>(
+        mut self,
+        mut writer: W,
+        image_callback: &mut dyn FnMut(&str) -> Option<String>,
+    ) -> std::io::Result<W> {
         let mut options = Options::empty();
         options.insert(Options::ENABLE_STRIKETHROUGH);
         options.insert(Options::ENABLE_TASKLISTS);
@@ -267,11 +304,17 @@ impl MarkdownToLatex {
                 Event::End(Tag::Link(_, _, _)) => panic!(),
 
                 Event::Start(Tag::Image(LinkType::Inline, url, _title)) => {
-                    // TODO: download and name the image
                     writer.add_newlines(1);
+                    let filename = image_callback(url.as_ref());
+                    let filename = if let Some(ref filename) = filename {
+                        filename.as_str()
+                    } else {
+                        writer.write_all(b"%")?;
+                        url.as_ref()
+                    };
                     writer.write_all(br"\includegraphics[width=\textwidth]{")?;
                     // TODO: escape url  (Note: unfortunately, we cannot un_replace here).
-                    writer.write_all(url.as_bytes())?;
+                    writer.write_all(filename.as_bytes())?;
                     writer.write_all(b"}")?;
                     writer.add_newlines(1);
                     if let Some((Event::End(Tag::Image(LinkType::Inline, ..)), _)) = parser.next() {

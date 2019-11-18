@@ -1,10 +1,78 @@
 const wasm = import("../pkg/index.js");
 
+const Converter = (function () {
+    var queue = {};
+    var fileNames = [];
+    var generation = 0;
+
+    function clearQueue() {
+        queue = {};
+        fileNames = [];
+        generation += 1;
+    }
+
+    var addToQueue = function (wasm_module) {
+        return function (url) {
+            if (!queue.hasOwnProperty(url)) {
+                const match = url.match(/_([^_]+?)\.(png|jpg|jpeg)$/i);
+                if (match) {
+                    var suffix = "." + match[2].toLowerCase();
+                    var fileName = match[1] + suffix;
+                    var i = 1;
+                    while (fileNames.indexOf(fileName) >= 0) {
+                        i += 1;
+                        fileName = match[1] + "-" + i + suffix;
+                    }
+                    fileNames.push(fileName);
+
+                    queue[url] = fetchPolyFill(url, "arraybuffer").then(buf => {
+                        wasm_module.register_image(url, fileName, new Uint8Array(buf));
+                    });
+                }
+            }
+        };
+    };
+
+    function markdownToLatex(markdown, wasm_module) {
+        clearQueue();
+        document.getElementById("save-zip-container").style.display = "none";
+        const latex = wasm_module.markdown_to_latex(markdown, addToQueue(wasm_module));
+        if (fileNames.length !== 0) {
+            document.getElementById("wait-zip").style.display = "inline";
+            const originalGeneration = generation;
+            Promise.all(Object.values(queue)).then(function () {
+                if (generation === originalGeneration) {
+                    const zipFileData = wasm_module.markdown_to_zipped_latex(markdown);
+                    const blob = new Blob([zipFileData], { type: "application/zip" });
+                    const url = window.URL.createObjectURL(blob);
+                    document.getElementById("save-zip").href = url;
+                    document.getElementById("wait-zip").style.display = "none";
+                    document.getElementById("save-zip-container").style.display = "inline";
+                }
+            });
+        } else {
+            document.getElementById("wait-zip").style.display = "none";
+        }
+
+        return latex;
+    }
+
+    function generateZipFile(wasm_module) {
+        return wasm_module.markdown_to_zipped_latex(markdown);
+    }
+
+    return {
+        markdownToLatex,
+        generateZipFile,
+    }
+}())
+
 function onDomContentLoaded() {
     window.onhashchange = handleHashChange;
     document.getElementById("authorize").addEventListener("click", startAuthorization);
-    document.getElementById("copy").addEventListener("click", copyLatex);
     document.getElementById("latex").addEventListener("click", selectAllLatex);
+    document.getElementById("copy").addEventListener("click", copyLatex);
+    document.getElementById("save-zip").addEventListener("click", saveZip);
     document.getElementById("back-to-start").addEventListener("click", backToStart);
     document.body.addEventListener('dragover', handleDragOver, false);
     document.body.addEventListener('dragexit', handleDragLeave, false);
@@ -69,21 +137,47 @@ function handleDragLeave(e) {
     document.getElementById("main").classList.remove("blurred");
 }
 
-function readMarkdownFile(file) {
-    var reader = new FileReader();
+function readTextFile(file) {
+    return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            return resolve(e.target.result);
+        };
+        reader.readAsText(file);
+        // TODO: detect error and reject promise
+    });
+}
 
-    reader.onload = async function (e) {
-        showResult();
-        document.querySelector('.result').classList.add('solo');
-        document.getElementById("first-step-doclist").style.display = "none";
+// Polyfill for Safari, which does not support `response.text()` or `response.arrayBuffer()`.
+// `responseType` can be "text" or "arraybuffer";
+function fetchPolyFill(url, responseType) {
+    return new Promise(function (resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'arraybuffer';
 
-        const wasm_module = await wasm;
-        let latex = wasm_module.markdown_to_latex(e.target.result);
-        document.getElementById("latex").value = latex;
-        setTimeout(function () { textarea.scrollTo(0, 0); }, 0);
-    };
+        xhr.onload = function (e) {
+            if (this.status >= 200 && this.status < 300) {
+                resolve(this.response);
+            }
+        };
 
-    reader.readAsText(file);
+        xhr.send();
+    });
+}
+
+async function readMarkdownFile(file) {
+    const markdown = await readTextFile(file);
+    const wasm_module = await wasm;
+    const latex = Converter.markdownToLatex(markdown, wasm_module);
+
+    showResult();
+    document.querySelector('.result').classList.add('solo');
+    document.getElementById("first-step-doclist").style.display = "none";
+
+    var textarea = document.getElementById("latex");
+    textarea.value = latex;
+    setTimeout(function () { textarea.scrollTo(0, 0); }, 0);
 }
 
 function handleFileDrop(e) {
@@ -103,7 +197,14 @@ function copyLatex(e) {
     e.preventDefault();
     selectAllLatex();
     document.execCommand("copy");
-    document.getElementById("confirm-copy").style.visibility = "visible";
+    document.getElementById("confirm").innerText = "✓ Text copied to clipboard.";
+    document.getElementById("confirm").style.visibility = "visible";
+}
+
+function saveZip(e) {
+    // Don't prevent default.
+    document.getElementById("confirm").innerText = '✓ Zip file saved (check "Downloads" directory).';
+    document.getElementById("confirm").style.visibility = "visible";
 }
 
 function selectAllLatex() {
@@ -129,6 +230,7 @@ export async function getPaperDocs(accessToken) {
     };
 
     try {
+        // TODO: does not work on Safari.
         var response = await fetch(url, {
             method: 'POST',
             mode: 'cors',
@@ -171,6 +273,7 @@ async function downloadDoc(accessToken, id, index) {
     );
 
     try {
+        // TODO: does not work on Safari.
         var response = await fetch(url, {
             method: 'POST',
             mode: 'cors',
@@ -217,12 +320,10 @@ async function downloadDoc(accessToken, id, index) {
 }
 
 function showResult() {
-    document.getElementById("choices-header").style.display = "none";
     document.getElementById("choice-manual").style.display = "none";
-    document.getElementById("choice-cli").style.display = "none";
     document.querySelector('#choice-oauth h2').style.display = "none";
     document.querySelector('#choice-oauth .steps').classList.add('active');
-    document.getElementById("confirm-copy").style.visibility = "hidden";
+    document.getElementById("confirm").style.visibility = "hidden";
 }
 
 var docSelected, backToStart;
@@ -248,17 +349,16 @@ var docSelected, backToStart;
             return;
         }
 
-        let latex = wasm_module.markdown_to_latex(markdown);
-        document.getElementById("latex").value = latex;
+        const latex = Converter.markdownToLatex(markdown, wasm_module);
+        var textarea = document.getElementById("latex");
+        textarea.value = latex;
         setTimeout(function () { textarea.scrollTo(0, 0); }, 0);
     }
 
     function backToStart(e) {
         e.preventDefault();
 
-        document.getElementById("choices-header").style.display = "block";
         document.getElementById("choice-manual").style.display = "block";
-        document.getElementById("choice-cli").style.display = "block";
         document.getElementById("first-step-doclist").style.display = "block";
         document.querySelector('#choice-oauth h2').style.display = "block";
         document.querySelector('#choice-oauth .steps').classList.remove('active');
