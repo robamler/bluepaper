@@ -25,8 +25,11 @@ const Converter = (function () {
                     }
                     fileNames.push(fileName);
 
+                    const originalGeneration = generation;
                     queue[url] = fetchPolyFill(url, "arraybuffer").then(buf => {
-                        wasm_module.register_image(url, fileName, new Uint8Array(buf));
+                        if (generation === originalGeneration) {
+                            wasm_module.register_image(url, fileName, new Uint8Array(buf));
+                        }
                     });
                 }
             }
