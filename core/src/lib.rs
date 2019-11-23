@@ -104,7 +104,10 @@ impl MarkdownToLatex {
     /// the bool returned by `f` is `true` then an uncommented `\includegraphics` will
     /// be generated. If it is `false`, then the `\includegraphics` will be generated
     /// but commented out.
-    pub fn into_string_with_image_callback(self, f: &mut dyn FnMut(&str) -> Option<String>) -> String {
+    pub fn into_string_with_image_callback(
+        self,
+        f: &mut dyn FnMut(&str) -> Option<String>,
+    ) -> String {
         unsafe {
             let mut latex = Vec::new();
             self.write_to_with_image_callback(&mut latex, f).unwrap();
