@@ -14,7 +14,7 @@ const Converter = (function () {
     var addToQueue = function (wasm_module) {
         return function (url) {
             if (!queue.hasOwnProperty(url)) {
-                const match = url.match(/_([^_]+?)\.(png|jpg|jpeg)$/i);
+                const match = url.match(/_([^_]+?_*)\.(png|jpg|jpeg)$/i);
                 if (match) {
                     var suffix = "." + match[2].toLowerCase();
                     var fileName = match[1] + suffix;
