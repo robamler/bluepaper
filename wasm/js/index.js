@@ -14,19 +14,33 @@ const Converter = (function () {
     var addToQueue = function (wasm_module) {
         return function (url) {
             if (!queue.hasOwnProperty(url)) {
-                const match = url.match(/_([^_]+?_*)\.(png|jpg|jpeg)$/i);
+                const match = url.match(/_([^_]+?_*)\.(png|jpg|jpeg|svg)$/i);
                 if (match) {
+                    const basename = match[1];
                     var suffix = "." + match[2].toLowerCase();
-                    var fileName = match[1] + suffix;
-                    var i = 1;
+                    const isSvg = suffix === ".svg"
+                    if (isSvg) {
+                        suffix = ".png";
+                    }
+
+                    var fileName = basename + suffix;
+                    var i = 2;
                     while (fileNames.indexOf(fileName) >= 0) {
+                        fileName = basename + "-" + i + suffix;
                         i += 1;
-                        fileName = match[1] + "-" + i + suffix;
                     }
                     fileNames.push(fileName);
 
                     const originalGeneration = generation;
-                    queue[url] = fetchPolyFill(url, "arraybuffer").then(buf => {
+                    var promise = fetchPolyFill(url, "arraybuffer");
+                    if (isSvg) {
+                        promise = promise.then(buf => {
+                            if (generation === originalGeneration) {
+                                return svgToPng(buf);
+                            }
+                        });
+                    }
+                    queue[url] = promise.then(buf => {
                         if (generation === originalGeneration) {
                             wasm_module.register_image(url, fileName, new Uint8Array(buf));
                         }
@@ -93,6 +107,32 @@ function onDomContentLoaded() {
         const savedTokens = JSON.parse(decodeURIComponent(match[2]));
         getPaperDocs(savedTokens.tokens[savedTokens.last_used]);
     }
+}
+
+function svgToPng(svgArrayBuffer) {
+    return new Promise((resolve, reject) => {
+        var canvas = document.createElement("canvas");
+
+        var img = new Image();
+        img.style = "max-width:2000px;max-height:3000px"; // TODO: test this.
+        img.onload = function () {
+            // TODO: scale up to maximum resolution (need to find out how to do that
+            //       before the image is converged to a bitmap.)
+            canvas.setAttribute("width", "" + img.width);
+            canvas.setAttribute("height", "" + img.height);
+            canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height);
+            canvas.toBlob(blob => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    resolve(e.target.result);
+                };
+                reader.readAsArrayBuffer(blob);
+            }, "image/png");
+        };
+
+        const svgBlob = new Blob([svgArrayBuffer], { type: "image/svg+xml" });
+        img.src = window.URL.createObjectURL(svgBlob);
+    });
 }
 
 const startAuthorization = (function () {
