@@ -53,6 +53,7 @@
               + encodeURIComponent(savedTokens.tokens[key])
             );
 
+            // No need to polyfill. This part of the fetch API should even be supported by Safari.
             responses.push(fetch(url, {
               method: 'POST',
               mode: 'cors',

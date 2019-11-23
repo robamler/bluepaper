@@ -32,7 +32,8 @@ const Converter = (function () {
                     fileNames.push(fileName);
 
                     const originalGeneration = generation;
-                    var promise = fetchPolyFill(url, "arraybuffer");
+                    var promise = fetchPolyFill(url, "GET", "arraybuffer").then(
+                        xhr => xhr.response);
                     if (isSvg) {
                         promise = promise.then(buf => {
                             if (generation === originalGeneration) {
@@ -196,21 +197,30 @@ function readTextFile(file) {
     });
 }
 
-// Polyfill for Safari, which does not support `response.text()` or `response.arrayBuffer()`.
-// `responseType` can be "text" or "arraybuffer";
-function fetchPolyFill(url, responseType) {
+// Polyfill for Safari's sake, which doesn't support
+// `response.text()` or `response.arrayBuffer()`.
+function fetchPolyFill(url, method, responseType, contentType, body) {
     return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = 'arraybuffer';
+        xhr.open(method, url, true);
+        if (typeof responseType !== "undefined") {
+            xhr.responseType = responseType;
+        }
+        if (typeof contentType !== "undefined") {
+            xhr.setRequestHeader("Content-Type", contentType);
+        }
 
-        xhr.onload = function (e) {
-            if (this.status >= 200 && this.status < 300) {
-                resolve(this.response);
+        xhr.onreadystatechange = function (e) {
+            if (this.readyState === XMLHttpRequest.DONE) {
+                if (this.status >= 200 && this.status < 300) {
+                    resolve(this);
+                } else {
+                    reject(this);
+                }
             }
         };
 
-        xhr.send();
+        xhr.send(body || null);
     });
 }
 
@@ -276,22 +286,21 @@ export async function getPaperDocs(accessToken) {
         sort_order: "descending",
         limit: 100
     };
+    const body = new TextEncoder("utf-8").encode(JSON.stringify(message)).buffer;
 
     try {
-        // TODO: does not work on Safari.
-        var response = await fetch(url, {
-            method: 'POST',
-            mode: 'cors',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'text/plain; charset=dropbox-cors-hack',
-            },
-            body: JSON.stringify(message)
-        });
-        var json = JSON.parse(await response.text());
+        var xhr;
+        try {
+            xhr = await fetchPolyFill(
+                url, "POST", "text", "text/plain; charset=dropbox-cors-hack", body);
+        } catch (e) {
+            xhr = e;
+        }
+        var json = JSON.parse(xhr.response);
     } catch {
         document.getElementById("wait-document").style.display = "none";
         document.getElementById("error-document").style.display = "table-row";
+        return;
     }
 
     if (json.error) {
@@ -321,21 +330,14 @@ async function downloadDoc(accessToken, id, index) {
     );
 
     try {
-        // TODO: does not work on Safari.
-        var response = await fetch(url, {
-            method: 'POST',
-            mode: 'cors',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'text/plain; charset=utf-8',
-            },
-        });
+        var xhr = await fetchPolyFill(
+            url, "POST", "text", "text/plain; charset=utf-8");
     } catch {
         console.log("Error while trying to download document meta data.");
     }
 
-    const meta = JSON.parse(response.headers.get("dropbox-api-result"));
-    docs[id] = { meta, markdown: response.text() };
+    const meta = JSON.parse(xhr.getResponseHeader("dropbox-api-result"));
+    docs[id] = { meta, markdown: xhr.response };
 
     var tr = document.createElement('tr');
     tr.classList.add('document');
