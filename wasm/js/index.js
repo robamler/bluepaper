@@ -53,6 +53,10 @@ const Converter = (function () {
     function markdownToLatex(markdown, wasm_module) {
         clearQueue();
         document.getElementById("save-zip-container").style.display = "none";
+        try {
+            URL.revokeObjectURL(document.getElementById("save-zip").href);
+        } catch (e) { }
+
         const latex = wasm_module.markdown_to_latex(markdown, addToQueue(wasm_module));
         if (fileNames.length !== 0) {
             document.getElementById("wait-zip").style.display = "inline";
@@ -121,6 +125,7 @@ function svgToPng(svgArrayBuffer) {
             canvas.setAttribute("width", "" + img.width);
             canvas.setAttribute("height", "" + img.height);
             canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height);
+            URL.revokeObjectURL(img.src);
             canvas.toBlob(blob => {
                 const reader = new FileReader();
                 reader.onload = e => {
