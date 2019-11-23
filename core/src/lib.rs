@@ -153,18 +153,31 @@ impl MarkdownToLatex {
         writer.add_newlines(2);
 
         let mut enumerate_nesting = 0;
+        let mut first_event = true;
+        let mut in_title = false;
 
         while let Some((event, range)) = parser.next() {
             match event {
                 Event::Start(Tag::Heading(level)) => {
-                    let h = HEADINGS[(std::cmp::min(level as usize, HEADINGS.len()) - 1)];
-                    writer.add_newlines(h.1 + 1);
-                    writer.write_all(h.0)?;
+                    if first_event && level == 1 {
+                        in_title = true;
+                        writer.write_all(b"\n\\title{");
+                    } else {
+                        let h = HEADINGS[std::cmp::min(level as usize, HEADINGS.len()) - 1];
+                        writer.add_newlines(h.1 + 1);
+                        writer.write_all(h.0)?;
+                    }
                 }
                 Event::End(Tag::Heading(level)) => {
-                    writer.write_all(b"}")?;
-                    let h = HEADINGS[(std::cmp::min(level as usize, HEADINGS.len()) - 1)];
-                    writer.add_newlines(h.1);
+                    if in_title {
+                        in_title = false;
+                        writer.write_all(b"}\n\\maketitle");
+                        writer.add_newlines(2);
+                    } else {
+                        writer.write_all(b"}")?;
+                        let h = HEADINGS[std::cmp::min(level as usize, HEADINGS.len()) - 1];
+                        writer.add_newlines(h.1);
+                    }
                     writer.limit_newlines(2); // Handles case of multiple consecutive headers
                 }
 
@@ -382,6 +395,8 @@ impl MarkdownToLatex {
                     writer.write_all(br"\par\noindent\hrulefill\par")?;
                 }
             }
+
+            first_event = false;
         }
 
         writer.limit_newlines(3);
