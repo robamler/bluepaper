@@ -161,7 +161,7 @@ impl MarkdownToLatex {
                 Event::Start(Tag::Heading(level)) => {
                     if first_event && level == 1 {
                         in_title = true;
-                        writer.write_all(b"\n\\title{");
+                        writer.write_all(b"\n\\title{")?;
                     } else {
                         let h = HEADINGS[std::cmp::min(level as usize, HEADINGS.len()) - 1];
                         writer.add_newlines(h.1 + 1);
@@ -171,7 +171,7 @@ impl MarkdownToLatex {
                 Event::End(Tag::Heading(level)) => {
                     if in_title {
                         in_title = false;
-                        writer.write_all(b"}\n\\maketitle");
+                        writer.write_all(b"}\n\\maketitle")?;
                         writer.add_newlines(2);
                     } else {
                         writer.write_all(b"}")?;
