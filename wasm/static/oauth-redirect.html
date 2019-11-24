@@ -71,7 +71,7 @@
           );
         }
 
-        window.opener.jsmodule.getPaperDocs(accessToken);
+        window.opener.jsmodule.oauthCallback(accessToken);
 
         document.getElementById("close").style.display = "block";
         window.close();
