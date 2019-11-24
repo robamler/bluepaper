@@ -493,6 +493,7 @@ async function readMarkdownFile(file) {
 
     var textarea = document.getElementById("latex");
     textarea.value = latex;
+    document.getElementById("copy").style.visibility = "visible";
     setTimeout(function () { textarea.scrollTo(0, 0); }, 0);
 }
 
@@ -682,7 +683,8 @@ function makeListEntry(title, owner, id, index) {
 }
 
 function showResult() {
-    document.getElementById("latex").value = "Exporting Paper Document ..."
+    document.getElementById("latex").value = "Just a second ..."
+    document.getElementById("copy").style.visibility = "hidden";
     document.getElementById("save-zip-container").style.display = "none";
     document.getElementById("wait-zip").style.display = "none";
     document.getElementById("choice-manual").style.display = "none";
@@ -728,6 +730,7 @@ var docSelected, backToStart;
 
         var textarea = document.getElementById("latex");
         textarea.value = latex;
+        document.getElementById("copy").style.visibility = "visible";
         setTimeout(function () { textarea.scrollTo(0, 0); }, 0);
     }
 
