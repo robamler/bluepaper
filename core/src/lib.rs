@@ -189,10 +189,12 @@ impl MarkdownToLatex {
                 }
 
                 Event::Start(Tag::BlockQuote) => {
+                    writer.add_newlines(2);
                     writer.write_on_single_line(r"\begin{quote}")?;
                 }
                 Event::End(Tag::BlockQuote) => {
                     writer.write_on_single_line(r"\end{quote}")?;
+                    writer.add_newlines(2);
                 }
 
                 Event::Start(Tag::CodeBlock(_language)) => {
