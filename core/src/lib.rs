@@ -139,7 +139,7 @@ impl MarkdownToLatex {
     /// guaranteed to be valid UTF-8.
     pub fn write_to_with_image_callback<W: Write>(
         mut self,
-        mut writer: W,
+        writer: W,
         image_callback: &mut dyn FnMut(&str) -> Option<String>,
     ) -> std::io::Result<W> {
         let mut options = Options::empty();
@@ -147,8 +147,7 @@ impl MarkdownToLatex {
         options.insert(Options::ENABLE_TASKLISTS);
         let mut parser = Parser::new_ext(&self.preprocessed, options).into_offset_iter();
 
-        writer.write_all(include_bytes!("preamble.tex"))?;
-        let mut writer = WhitespaceFormatter::new(writer);
+        let mut writer = WhitespaceFormatter::new_latex_formatter(writer)?;
         writer.limit_newlines(2);
         writer.add_newlines(2);
 

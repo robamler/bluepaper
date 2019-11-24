@@ -1,4 +1,4 @@
-use bluepaper_core::MarkdownToLatex;
+use bluepaper_core::{format::WhitespaceFormatter, latex_escape::escape_str, MarkdownToLatex};
 
 use js_sys;
 use lazy_static::lazy_static;
@@ -14,9 +14,16 @@ use std::sync::Mutex;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-lazy_static! {
-    #[allow(non_upper_case_globals)]
-    static ref images: Mutex<HashMap<String, (String, Vec<u8>)>> = Mutex::new(HashMap::new());
+mod globals {
+    #![allow(non_upper_case_globals)]
+    use super::{lazy_static, HashMap, Mutex, WhitespaceFormatter};
+
+    lazy_static! {
+        pub static ref images: Mutex<HashMap<String, (String, Vec<u8>)>> =
+            Mutex::new(HashMap::new());
+        pub static ref latex_formatter: Mutex<WhitespaceFormatter<Vec<u8>>> =
+            Mutex::new(WhitespaceFormatter::new_latex_formatter(Vec::new()).unwrap());
+    }
 }
 
 #[wasm_bindgen]
@@ -32,12 +39,15 @@ pub fn markdown_to_latex(markdown: String, image_callback: &js_sys::Function) ->
 
 #[wasm_bindgen]
 pub fn register_image(url: String, filename: String, data: Vec<u8>) {
-    images.lock().unwrap().insert(url, (filename, data));
+    globals::images
+        .lock()
+        .unwrap()
+        .insert(url, (filename, data));
 }
 
 #[wasm_bindgen]
 pub fn clear_registered_images() {
-    images.lock().unwrap().clear();
+    globals::images.lock().unwrap().clear();
 }
 
 #[wasm_bindgen]
@@ -45,7 +55,7 @@ pub fn latex_to_zipped_latex(latex: String) -> Vec<u8> {
     let zip_file = Vec::new();
     let mut zip_writer = zip::ZipWriter::new(Cursor::new(zip_file));
 
-    let images_guard = images.lock().unwrap();
+    let images_guard = globals::images.lock().unwrap();
 
     zip_writer
         .add_directory("figures/", Default::default())
@@ -71,7 +81,7 @@ pub fn markdown_to_zipped_latex(markdown: String) -> Vec<u8> {
     let zip_file = Vec::new();
     let mut zip_writer = zip::ZipWriter::new(Cursor::new(zip_file));
 
-    let images_guard = images.lock().unwrap();
+    let images_guard = globals::images.lock().unwrap();
 
     zip_writer
         .add_directory("figures/", Default::default())
@@ -96,4 +106,49 @@ pub fn markdown_to_zipped_latex(markdown: String) -> Vec<u8> {
     zip_writer.write_all(latex.as_bytes()).unwrap();
 
     zip_writer.finish().unwrap().into_inner()
+}
+
+#[wasm_bindgen]
+pub fn clear_output() -> String {
+    let mut formatter = globals::latex_formatter.lock().unwrap();
+    let output = unsafe { std::str::from_utf8_unchecked(formatter.get_mut().unwrap()) };
+    let output = output.to_string();
+    formatter.reset_latex_formatter();
+    output
+}
+
+#[wasm_bindgen]
+pub fn write_raw(s: &str, newlines_before: u32, newlines_after: u32) {
+    let mut formatter = globals::latex_formatter.lock().unwrap();
+    formatter.add_newlines(newlines_before);
+    formatter.write_all(s.as_bytes()).unwrap();
+    formatter.add_newlines(newlines_after);
+}
+
+#[wasm_bindgen]
+pub fn write_escaped(s: &str, newlines_before: u32, newlines_after: u32) {
+    let mut formatter = globals::latex_formatter.lock().unwrap();
+    formatter.add_newlines(newlines_before);
+    escape_str(s, formatter.get_mut().unwrap()).unwrap();
+    formatter.add_newlines(newlines_after);
+}
+
+#[wasm_bindgen]
+pub fn add_newlines(num: u32) {
+    globals::latex_formatter.lock().unwrap().add_newlines(num);
+}
+
+#[wasm_bindgen]
+pub fn increase_indent() {
+    globals::latex_formatter.lock().unwrap().increase_indent();
+}
+
+#[wasm_bindgen]
+pub fn decrease_indent() {
+    globals::latex_formatter.lock().unwrap().decrease_indent();
+}
+
+#[wasm_bindgen]
+pub fn limit_newlines(num: u32) {
+    globals::latex_formatter.lock().unwrap().limit_newlines(num);
 }

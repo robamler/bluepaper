@@ -63,6 +63,20 @@ impl<W: Write> WhitespaceFormatter<W> {
         Self::with_indent_width(2, inner)
     }
 
+    /// Creates a new `WhitespaceFormatter` and writes a LaTeX preamble to it.
+    ///
+    /// Returns a formatter that writes to `inner` with a default indentation width of `2`.
+    pub fn new_latex_formatter(inner: W) -> std::io::Result<Self> {
+        let mut formatter = Self::new(inner);
+        formatter.write_latex_preamble()?;
+        Ok(formatter)
+    }
+
+    fn write_latex_preamble(&mut self) -> std::io::Result<()> {
+        self.inner.write_all(include_bytes!("preamble.tex"))?;
+        Ok(())
+    }
+
     /// Creates a new `WhitespaceFormatter` with a custom indentation width.
     ///
     /// The `indentation_width` controls how many spaces of indentation are added per
@@ -237,6 +251,14 @@ impl<W: Write> WhitespaceFormatter<W> {
         self.current_newlines = 0;
         self.current_newline_limit = MAX_NEWLINES;
         Ok(())
+    }
+}
+
+impl WhitespaceFormatter<Vec<u8>> {
+    /// Resets the formatter with a LaTeX preamble.
+    pub fn reset_latex_formatter(&mut self) {
+        self.inner.clear();
+        self.write_latex_preamble().unwrap();
     }
 }
 

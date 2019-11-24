@@ -1,78 +1,6 @@
 const wasm = import("../pkg/index.js");
 var accessToken = null;
 
-
-function makeFormatter() {
-    var output = `\\documentclass{article}
-
-\\usepackage[utf8]{inputenc}
-\\usepackage{amssymb,amsmath,amsfonts}
-\\usepackage[normalem]{ulem}
-\\usepackage{graphicx}
-\\usepackage[unicode=true]{hyperref}
-
-\\newcommand{\\checkedbox}{\\mbox{\\ooalign{$\\square$\\cr\\hidewidth\\raisebox{.45ex}{\\hspace{0.2em}$\\checkmark$}\\hidewidth\\cr}}}
-\\newcommand{\\uncheckedbox}{$\\square$}
-
-\\begin{document}
-
-`;
-    var indentation = 0;
-    var newlines = 0;
-    var maxNewlines = Infinity;
-
-    function writeUnescaped(str) {
-        const n = Math.min(newlines, maxNewlines);
-        if (n != 0) {
-            if (str.match(/^\s*$/)) {
-                // Don't write whitespace-only strings at the beginning of a line.
-                return;
-            }
-            output += "\n".repeat(n) + "  ".repeat(indentation);
-        }
-        newlines = 0;
-        maxNewlines = Infinity;
-        output += str;
-    }
-
-    var writeEscaped = writeUnescaped; // TODO
-
-    function addNewlines(num) {
-        newlines = Math.max(num, newlines);
-    }
-
-    function limitNewlines(num) {
-        maxNewlines = num;
-    }
-
-    function indent() {
-        indentation += 1;
-    }
-
-    function unindent() {
-        if (indentation > 0) {
-            indentation -= 1;
-        }
-    }
-
-    function finish() {
-        addNewlines(2);
-        writeUnescaped("\\end{document}\n")
-        return output;
-    }
-
-    return {
-        writeUnescaped,
-        writeEscaped,
-        addNewlines,
-        limitNewlines,
-        indent,
-        unindent,
-        finish
-    }
-}
-
-
 const Converter = (function () {
     var queue = {};
     var fileNames = [];
@@ -156,7 +84,7 @@ const Converter = (function () {
                     if (inputFormat == "markdown") {
                         zipFileData = wasm_module.markdown_to_zipped_latex(input);
                     } else {
-                        latex = htmlToLatex(input, null, true);
+                        latex = htmlToLatex(input, wasm_module, true);
                         zipFileData = wasm_module.latex_to_zipped_latex(latex);
                     }
 
@@ -174,7 +102,7 @@ const Converter = (function () {
         return latex;
     }
 
-    function htmlToLatex(html, wasm_module, uncommentGraphics) {
+    function htmlToLatex(html, wasm_module, hasGraphics) {
         function processDivList(div) {
             var listTypesStack = ["indent"];
             var listLevelsStack = [0];
@@ -187,18 +115,15 @@ const Converter = (function () {
 
                 if (!isCodeBlockLine && inCodeBlock) {
                     inCodeBlock = false;
-                    formatter.writeUnescaped("\\end{verbatim}");
-                    formatter.addNewlines(2);
+                    wasm_module.write_raw("\\end{verbatim}", 0, 2);
                 }
 
                 if (!isListItem) {
                     while (listLevelsStack[listLevelsStack.length - 1] !== 0) {
-                        formatter.unindent();
-                        formatter.unindent();
-                        formatter.addNewlines(1);
-                        formatter.limitNewlines(1);
-                        formatter.writeUnescaped("\\end{" + listTypesStack.pop() + "}");
-                        formatter.addNewlines(2);
+                        wasm_module.decrease_indent();
+                        wasm_module.decrease_indent();
+                        wasm_module.limit_newlines(1);
+                        wasm_module.write_raw("\\end{" + listTypesStack.pop() + "}", 1, 2);
                         listLevelsStack.pop();
                     }
                 }
@@ -206,11 +131,9 @@ const Converter = (function () {
                 if (isCodeBlockLine) {
                     if (!inCodeBlock) {
                         inCodeBlock = true;
-                        formatter.addNewlines(2);
-                        formatter.writeUnescaped("\\begin{verbatim}\n");
+                        wasm_module.write_raw("\\begin{verbatim}\n", 2, 0);
                     }
-                    formatter.writeEscaped(child.textContent);
-                    formatter.addNewlines(1);
+                    wasm_module.write_escaped(child.textContent, 0, 1);
                 }
 
                 if (isListItem) {
@@ -233,15 +156,13 @@ const Converter = (function () {
                             || (listType !== "indent"
                                 && listLevel === listLevelsStack[listLevelsStack.length - 1]
                                 && listTypesStack[listTypesStack.length - 1] !== listType)) {
-                            formatter.unindent();
+                            wasm_module.decrease_indent();
                             const endListType = listTypesStack.pop();
                             if (endListType !== "quote") {
-                                formatter.unindent();
+                                wasm_module.decrease_indent();
                             }
-                            formatter.addNewlines(1);
-                            formatter.limitNewlines(1);
-                            formatter.writeUnescaped("\\end{" + endListType + "}");
-                            formatter.addNewlines(2);
+                            wasm_module.limit_newlines(1);
+                            wasm_module.write_raw("\\end{" + endListType + "}", 1, 2);
                             listLevelsStack.pop();
                         }
 
@@ -249,34 +170,27 @@ const Converter = (function () {
                             if (listLevel > listLevelsStack[listLevelsStack.length - 1]) {
                                 listTypesStack.push(listType);
                                 listLevelsStack.push(listLevel);
-                                if (listLevel === 1) {
-                                    formatter.addNewlines(2);
-                                } else {
-                                    formatter.addNewlines(1);
-                                }
-                                formatter.writeUnescaped("\\begin{" + listType + "}");
-                                formatter.addNewlines(1);
-                                formatter.limitNewlines(1);
-                                formatter.indent();
+                                wasm_module.write_raw("\\begin{" + listType + "}", listLevel === 1 ? 2 : 1, 1);
+                                wasm_module.limit_newlines(1);
+                                wasm_module.increase_indent();
                                 if (listType !== "quote") {
-                                    formatter.indent();
+                                    wasm_module.increase_indent();
                                 }
                             }
 
                             if (listType !== "quote") {
-                                formatter.addNewlines(2);
-                                formatter.unindent();
+                                wasm_module.decrease_indent();
                                 if (originalListType === "task") {
-                                    formatter.writeUnescaped("\\item[\\uncheckedbox] ");
+                                    wasm_module.write_raw("\\item[\\uncheckedbox] ", 2, 0);
                                 } else if (originalListType === "taskdone") {
-                                    formatter.writeUnescaped("\\item[\\checkedbox] ");
+                                    wasm_module.write_raw("\\item[\\checkedbox] ", 2, 0);
                                 } else {
-                                    formatter.writeUnescaped("\\item ");
+                                    wasm_module.write_raw("\\item ", 2, 0);
                                 }
-                                formatter.indent();
-                                formatter.limitNewlines(0);
+                                wasm_module.increase_indent();
+                                wasm_module.limit_newlines(0);
                             } else {
-                                formatter.addNewlines(1);
+                                wasm_module.add_newlines(1);
                             }
                         }
                     }
@@ -284,16 +198,14 @@ const Converter = (function () {
 
                 if (!isCodeBlockLine) {
                     if (div.firstElementChild && div.firstElementChild.classList.contains("ace-separator")) {
-                        formatter.addNewlines(2);
-                        formatter.writeUnescaped("\\medbreak\\hrule\\medbreak");
-                        formatter.addNewlines(2);
+                        wasm_module.write_raw("\\medbreak\\hrule\\medbreak", 2, 2);
                     } else if (div.textContent === "" && (
                         (div.firstElementChild && div.firstElementChild.tagName === "BR")
                         || listTypesStack[listTypesStack.length - 1] == "quote")) {
                         // Empty line, signalling a new paragraph.
-                        formatter.addNewlines(2);
+                        wasm_module.add_newlines(2);
                     } else {
-                        formatter.addNewlines(1);
+                        wasm_module.add_newlines(1);
                         processChildren(div);
                     }
                 }
@@ -305,7 +217,7 @@ const Converter = (function () {
         function processChildren(element) {
             for (var child = element.firstChild; child; child = child.nextSibling) {
                 if (child.nodeType === Node.TEXT_NODE) {
-                    formatter.writeEscaped(child.textContent);
+                    wasm_module.write_escaped(child.textContent, 0, 0);
                 } else if (child.nodeType === Node.ELEMENT_NODE) {
                     processElement(child);
                 }
@@ -314,107 +226,95 @@ const Converter = (function () {
 
         function processElement(el) {
             if (el.tagName === "H1") {
-                formatter.addNewlines(3);
-                formatter.writeUnescaped("\\section{")
+                wasm_module.write_raw("\\section{", 3, 0);
                 processChildren(el);
-                formatter.writeUnescaped("}");
-                formatter.addNewlines(2);
-                formatter.limitNewlines(2);
+                wasm_module.write_raw("}", 0, 2);
+                wasm_module.limit_newlines(2);
             } else if (el.tagName === "H2") {
-                formatter.addNewlines(3);
-                formatter.writeUnescaped("\\subsection{")
+                wasm_module.write_raw("\\subsection{", 3, 0);
                 processChildren(el);
-                formatter.writeUnescaped("}");
-                formatter.addNewlines(2);
-                formatter.limitNewlines(2);
+                wasm_module.write_raw("}", 0, 2);
+                wasm_module.limit_newlines(2);
             } else if (el.tagName === "SPAN") {
                 if (el.classList.contains("ace-all-bold-hthree")) {
-                    formatter.addNewlines(2);
-                    formatter.writeUnescaped("\\paragraph{");
+                    wasm_module.write_raw("\\paragraph{", 2, 0);
                     processChildren(el.firstElementChild.firstElementChild);
-                    formatter.writeUnescaped("}");
-                    formatter.addNewlines(1);
-                    formatter.limitNewlines(2);
+                    wasm_module.write_raw("}", 0, 1);
+                    wasm_module.limit_newlines(2);
                 } else if (el.classList.contains("inline-code")) {
-                    formatter.writeUnescaped("\\texttt{");
-                    formatter.writeEscaped(el.textContent);
-                    formatter.writeUnescaped("}");
+                    wasm_module.write_raw("\\texttt{", 0, 0);
+                    wasm_module.write_escaped(el.textContent, 0, 0);
+                    wasm_module.write_raw("}", 0, 0);
                 } else if (el.classList.contains("inline-latex")) {
-                    formatter.writeUnescaped("$");
-                    formatter.writeUnescaped(el.getAttribute("data-current-latex-value"));
-                    formatter.writeUnescaped("$");
-                } else if (!el.hasAttribute("data-faketext")) {
+                    wasm_module.write_raw("$", 0, 0);
+                    wasm_module.write_raw(el.getAttribute("data-current-latex-value"), 0, 0);
+                    wasm_module.write_raw("$", 0, 0);
+                } else if (!el.hasAttribute("data-faketext")
+                    && !el.classList.contains("gallery-extraneous-space")) {
                     processChildren(el);
                 }
             } else if (el.tagName === "I") {
-                formatter.writeUnescaped("\\emph{");
+                wasm_module.write_raw("\\emph{", 0, 0);
                 processChildren(el);
-                formatter.writeUnescaped("}");
+                wasm_module.write_raw("}", 0, 0);
             } else if (el.tagName === "B") {
-                formatter.writeUnescaped("\\textbf{");
+                wasm_module.write_raw("\\textbf{", 0, 0);
                 processChildren(el);
-                formatter.writeUnescaped("}");
+                wasm_module.write_raw("}", 0, 0);
             } else if (el.tagName === "S") {
-                formatter.writeUnescaped("\\sout{");
+                wasm_module.write_raw("\\sout{", 0, 0);
                 processChildren(el);
-                formatter.writeUnescaped("}");
+                wasm_module.write_raw("}", 0, 0);
             } else if (el.tagName === "A") {
-                formatter.writeUnescaped("\\href{");
-                formatter.writeEscaped(el.href);
-                formatter.writeUnescaped("}{");
+                wasm_module.write_raw("\\href{", 0, 0);
+                wasm_module.write_escaped(el.href, 0, 0);
+                wasm_module.write_raw("}{", 0, 0);
                 processChildren(el);
-                formatter.writeUnescaped("}");
+                wasm_module.write_raw("}", 0, 0);
             } else if (el.tagName === "IMG") {
                 numImages += 1;
                 const fileName = "figure-" + numImages + ".png";
-                if (wasm_module) {
+                if (!hasGraphics) {
                     fileNames.push(fileName);
                     queue[fileName] = fetchPolyFill(el.src, "GET", "arraybuffer").then(xhr => {
                         wasm_module.register_image(fileName, "", new Uint8Array(xhr.response));
                     });
                 }
-                formatter.addNewlines(2);
-                formatter.writeUnescaped(
-                    (uncommentGraphics ? "" : "%") +
-                    "\\includegraphics[width=\\textwidth]{figures/" + fileName + "}");
-                formatter.addNewlines(2);
+                wasm_module.write_raw(
+                    (hasGraphics ? "" : "%") +
+                    "\\includegraphics[width=\\textwidth]{figures/" + fileName + "}", 2, 2);
             } else if (el.tagName === "TABLE") {
                 var colCount = el.firstElementChild.firstElementChild.childElementCount;
-                formatter.addNewlines(2);
-                formatter.writeUnescaped("\\begin{tabular}{" + "l".repeat(colCount) + "}");
-                formatter.addNewlines(1);
-                formatter.indent();
+                wasm_module.write_raw("\\begin{tabular}{" + "l".repeat(colCount) + "}", 2, 1); wasm_module.increase_indent();
 
                 for (var tr = el.firstElementChild.firstElementChild; tr; tr = tr.nextElementSibling) {
                     for (var td = tr.firstElementChild; td; td = td.nextElementSibling) {
                         if (td !== tr.firstElementChild) {
-                            formatter.writeUnescaped("& ");
+                            wasm_module.write_raw("& ", 0, 0);
                         }
-                        formatter.indent();
+                        wasm_module.increase_indent();
                         processChildren(td);
-                        formatter.unindent();
-                        formatter.addNewlines(1);
+                        wasm_module.decrease_indent();
+                        wasm_module.add_newlines(1);
                     }
 
                     if (tr.nextElementSibling) {
                         if (tr === el.firstElementChild.firstElementChild) {
-                            formatter.writeUnescaped("\\\\\\hline");
+                            wasm_module.write_raw("\\\\\\hline", 0, 0);
                         } else {
-                            formatter.writeUnescaped("\\\\");
+                            wasm_module.write_raw("\\\\", 0, 0);
                         }
                     }
-                    formatter.addNewlines(1);
+                    wasm_module.add_newlines(1);
                 }
 
-                formatter.unindent();
-                formatter.writeUnescaped("\\end{tabular}");
-                formatter.addNewlines(2);
-            } else {
+                wasm_module.decrease_indent();
+                wasm_module.write_raw("\\end{tabular}", 0, 2);
+            } else if (!el.classList.contains("gallery-drop-hint-container")) {
                 processChildren(el);
             }
         }
 
-        var formatter = makeFormatter();
         var listIndent = 0;
         var numImages = 0;
 
@@ -422,15 +322,15 @@ const Converter = (function () {
             .documentElement
             .getElementsByTagName("body")[0];
         const title = body.querySelector(".hp-print-mode .ace-feature-bigtitle > .ace-editor > div:first-child");
-        formatter.writeUnescaped("\\title{")
+        wasm_module.write_raw("\\title{", 0, 0);
         processChildren(title);
-        formatter.writeUnescaped("}\n\\maketitle");
-        formatter.addNewlines(2);
-        formatter.limitNewlines(2);
+        wasm_module.write_raw("}\n\\maketitle", 0, 2);
+        wasm_module.limit_newlines(2);
 
         processDivList(title.nextElementSibling);
 
-        return formatter.finish();
+        wasm_module.write_raw("\\end{document}", 2, 1);
+        return wasm_module.clear_output();
     }
 
     return {
