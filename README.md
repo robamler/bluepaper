@@ -1,7 +1,7 @@
 # Bluepaper
 
 Bluepaper is a small web app that exports Dropbox Paper documents to valid and clean LaTeX code.
-It also downloads included images and packages them together with the LaTeX code in a `.zip` file.
+It also downloads included images, and packages them together with the LaTeX code in a `.zip` file.
 
 - **Try it out here:** [Bluepaper Web App](https://robamler.github.io/bluepaper/)
 
