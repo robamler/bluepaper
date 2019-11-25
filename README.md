@@ -1,13 +1,11 @@
 # Bluepaper
 
 Bluepaper is a small web app that exports Dropbox Paper documents to valid and clean LaTeX code.
+It also downloads included images and packages them together with the LaTeX code in a `.zip` file.
 
-- **Try it out here:** [https://robamler.github.io/bluepaper/](https://robamler.github.io/bluepaper/)
+- **Try it out here:** [Bluepaper Web App](https://robamler.github.io/bluepaper/)
 
-Bluepaper uses the excellent [pulldown-cmark](https://crates.io/crates/pulldown-cmark) Rust crate with some minor tweaks to parse some Dropbox-specific formatting like LaTeX equations.
-Bluepaper also automatically downloads included images and packages them in a `.zip` file together with the generated LaTeX code.
-
-The [Bluepaper web app](https://robamler.github.io/bluepaper/) runs entirely client side using WebAssembly.
+Bluepaper runs entirely on the client side using JavaScript WebAssembly (WASM).
 There is also a proof-of-concept command line interface app in the directory `cli` but it requires building from source and it is not actively maintained (volunteers welcome).
 
 
