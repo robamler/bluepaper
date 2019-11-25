@@ -5,7 +5,7 @@ It also downloads included images, and packages them together with the LaTeX cod
 
 - **Try it out here:** [Bluepaper Web App](https://robamler.github.io/bluepaper/)
 
-Bluepaper runs entirely on the client side using JavaScript WebAssembly (WASM).
+Bluepaper runs entirely on the client side using JavaScript and WebAssembly (WASM).
 There is also a proof-of-concept command line interface app in the directory `cli` but it requires building from source and it is not actively maintained (volunteers welcome).
 
 
