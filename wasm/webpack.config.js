@@ -20,9 +20,11 @@ module.exports = {
     https: true,
   },
   plugins: [
-    new CopyPlugin([
-      path.resolve(__dirname, "static")
-    ]),
+    new CopyPlugin({
+      patterns: [
+        { from: 'static' },
+      ],
+    }),
 
     new WasmPackPlugin({
       forceMode: "production",
