@@ -263,7 +263,8 @@ impl MarkdownToLatex {
                 }
 
                 Event::Start(Tag::FootnoteDefinition(_)) => {
-                    warn!("Ignoring footnote definition (not yet implemented).") // TODO
+                    warn!("Ignoring footnote definition (not yet implemented).")
+                    // TODO
                 }
                 Event::End(Tag::FootnoteDefinition(_)) => {}
 
