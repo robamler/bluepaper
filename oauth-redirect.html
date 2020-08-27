@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authorization Callback &mdash; Bluepaper.</title>
+  <link rel="shortcut icon" href="favicon.ico">
+  <style>
+    @font-face {
+      font-family: "Gabriela";
+      src: url("fonts/Gabriela/converted.eot");
+      src: url("fonts/Gabriela/converted.eot?#iefix") format("embedded-opentype"),
+        url("fonts/Gabriela/converted.woff2") format("woff2"),
+        url("fonts/Gabriela/converted.woff") format("woff"),
+        url("fonts/Gabriela/Gabriela-Regular.ttf") format("truetype"),
+        url("fonts/Gabriela/converted.otf") format("opentype");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * {
+      font-family: 'Gabriela', sans-serif;
+    }
+
+    body {
+      font-size: 20px;
+      background-color: #385083;
+      color: #fff;
+      margin: 0;
+      padding: 1em;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: underline;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const params = new URLSearchParams(document.location.hash.substring(1));
+      const accessToken = params.get("access_token");
+      const accountId = params.get("account_id");
+      const state = params.get("state");
+      const error = params.get("error");
+      const error_description = params.get("error_description");
+
+      if (error === "access_denied") {
+        window.close();
+      } else if (accessToken) {
+        const state_params = new URLSearchParams(state);
+        if (state_params.get("remember") === "true") {
+          var savedTokens = null;
+
+          const match = document.cookie.match(/(^|; ?)bluepaper_dropbox_access_tokens=([^;]+)/);
+          if (match) {
+            savedTokens = JSON.parse(decodeURIComponent(match[2]));
+            savedTokens.tokens[accountId] = accessToken;
+            savedTokens.last_used = accountId;
+          } else {
+            savedTokens = {
+              tokens: {},
+              last_used: accountId
+            };
+            savedTokens.tokens[accountId] = accessToken;
+          }
+
+          document.cookie = (
+            "bluepaper_dropbox_access_tokens=" + encodeURIComponent(JSON.stringify(savedTokens))
+            + ";path=/bluepaper/;max-age=31536000;secure;samesite=lax"
+          );
+        }
+
+        window.opener.jsmodule.oauthCallback(accessToken);
+
+        document.getElementById("close").style.display = "block";
+        window.close();
+      } else {
+        document.getElementById("error").style.display = "block";
+      }
+    })
+  </script>
+</head>
+
+<body>
+  <p id="close" style="display:none">You can now close this window.</p>
+  <p id="error" style="display:none">
+    An error occurred.
+    Please consider <a href="https://github.com/robamler/bluepaper/issues/new">reporting it</a>.
+  </p>
+</body>
+
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revoke Access Permissions &mdash; Bluepaper</title>
+  <link rel="shortcut icon" href="favicon.ico">
+  <style>
+    @font-face {
+      font-family: "Gabriela";
+      src: url("fonts/Gabriela/converted.eot");
+      src: url("fonts/Gabriela/converted.eot?#iefix") format("embedded-opentype"),
+        url("fonts/Gabriela/converted.woff2") format("woff2"),
+        url("fonts/Gabriela/converted.woff") format("woff"),
+        url("fonts/Gabriela/Gabriela-Regular.ttf") format("truetype"),
+        url("fonts/Gabriela/converted.otf") format("opentype");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * {
+      font-family: 'Gabriela', sans-serif;
+    }
+
+    body {
+      font-size: 20px;
+      background-color: #385083;
+      color: #fff;
+      margin: 0;
+      padding: 1em;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: underline;
+    }
+
+    h2 {
+      margin-top: 1.5em;
+    }
+  </style>
+  <script>
+    async function revoke() {
+      const match = document.cookie.match(/(^|; ?)bluepaper_dropbox_access_tokens=([^;]+)/);
+      if (match) {
+        const savedTokens = JSON.parse(decodeURIComponent(match[2]));
+        var responses = [];
+        for (var key in savedTokens.tokens) {
+          if (savedTokens.tokens.hasOwnProperty(key)) {
+            const url = (
+              'https://api.dropboxapi.com/2/auth/token/revoke?reject_cors_preflight=true&authorization=Bearer%20'
+              + encodeURIComponent(savedTokens.tokens[key])
+            );
+
+            // No need to polyfill. This part of the fetch API should even be supported by Safari.
+            responses.push(fetch(url, {
+              method: 'POST',
+              mode: 'cors',
+              cache: 'no-cache',
+              headers: {
+                'Content-Type': 'text/plain; charset=dropbox-cors-hack',
+              },
+              body: 'null'
+            }));
+          }
+        }
+
+        try {
+          await Promise.all(responses);
+          // Remove cookie only if API call succeeded.
+          document.cookie = "bluepaper_dropbox_access_tokens=;max-age=0";
+          document.getElementById("status").innerText = (
+            "✓ Successfully revoked access permissions to Dropbox and removed cookie."
+          );
+        } catch {
+          document.getElementById("status").innerText = "Network error. Are you connected to the internet?";
+        }
+      } else {
+        document.getElementById("status").innerText = "✓ There were no saved access permissions.";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", revoke);
+  </script>
+</head>
+
+<body>
+  <h1>Revoking Bluepaper's Access Permissions to Dropbox</h1>
+
+  <h2>Step 1: Revoke This Browser's Permissions</h2>
+  <p>
+    <strong>Status:</strong>
+    <span id="status">Waiting for server response&nbsp;...</span>
+  </p>
+
+  <h2>Step 2: Revoke Other Browsers' Permissions</h2>
+  <p>
+    If you have used Bluepaper from a different computer or a different web browser then that other Browser may still
+    have access to your Dropbox account.
+    To revoke <em>all</em> access permissions, go to the <a
+      href="https://www.dropbox.com/account/connected_apps">"Connected Apps" section in your Dropbox settings</a> and
+    remove "Bluepaper" from the list of connected apps.
+  </p>
+
+  <h2>Whoops, I Came Here by Accident!</h2>
+  <p>
+    Changed your mind?
+    Don't worry, just go <a href="./">back to Bluepaper</a> and click on "Grant Access".
+  </p>
+</body>
+
+</html>
