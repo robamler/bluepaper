@@ -60,13 +60,13 @@ jobs:
         node-version: 10.16
 
     - name: Audit npm dependencies (with --audit-level=high)
-      run: cd wasm/www && npm audit --audit-level=high
+      run: cd wasm && npm audit --audit-level=high
 
     - name: Cache frontend (npm) dependencies
       uses: actions/cache@v2
       with:
         path: wasm/node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('wasm/www/package-lock.json') }}
+        key: ${{ runner.os }}-node-${{ hashFiles('wasm/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
 
