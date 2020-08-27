@@ -51,9 +51,6 @@ jobs:
         # https://github.com/rustwasm/wasm-pack/issues/886
         version: v0.8.1
 
-    - name: Build backend
-      run: cd wasm && CARGO_HOME=../.cargo_home wasm-pack build
-
     - name: Install node.js version 10.16 
       uses: actions/setup-node@v1
       with:
@@ -73,16 +70,13 @@ jobs:
     - name: Install frontend (npm) dependencies
       run: cd wasm && npm install
 
-    - name: Build frontend
-      run: cd wasm && npm run build
+    - name: Build app in release mode
+      run: cd wasm && CARGO_HOME=../.cargo_home npm run build
 
-    - name: Stage to gh-pages-staging
+    - name: Stage on gh-pages-staging
       id: staging
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./wasm/dist
         publish_branch: gh-pages-staging
-
-    - name: Debug staging output
-      run: echo ${{ steps.staging.outputs }}
