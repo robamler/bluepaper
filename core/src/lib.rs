@@ -42,7 +42,7 @@ const LOWER_ROMAN: [&str; MAX_ENUMERATE_NESTING as usize] = ["i", "ii", "iii", "
 ///
 /// assert_eq!(&latex[..24], "\\documentclass{article}\n");
 /// assert!(latex
-///     .find("\\section{Title}\n\nText with \\emph{emphasis} and $m_a^{th}$.")
+///     .find("\\title{Title}\n\\maketitle\n\nText with \\emph{emphasis} and $m_a^{th}$.")
 ///     .is_some());
 /// assert_eq!(&latex[latex.len() - 15..], "\\end{document}\n");
 /// ```
@@ -66,7 +66,7 @@ const LOWER_ROMAN: [&str; MAX_ENUMERATE_NESTING as usize] = ["i", "ii", "iii", "
 /// let latex = String::from_utf8(writer).unwrap();
 /// assert_eq!(&latex[..24], "\\documentclass{article}\n");
 /// assert!(latex
-///     .find("\\section{Title}\n\nText with a \\texttt{code span}.")
+///     .find("\\title{Title}\n\\maketitle\n\nText with a \\texttt{code span}.")
 ///     .is_some());
 /// assert_eq!(&latex[latex.len() - 15..], "\\end{document}\n");
 /// ```
