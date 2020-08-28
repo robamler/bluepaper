@@ -19,15 +19,21 @@ jobs:
       with:
         submodules: true
 
+    - name: Get tools versions
+      id: versions
+      run: echo "::set-output name=rustc::`rustc --version | awk '{print $2}'`"
+      run: echo "::set-output name=node::10.16"
+
     - name: Cache backend (cargo) dependencies
       uses: actions/cache@v2
       with:
         path: |
           target
           .cargo_home
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+        key: ${{ runner.os }}-rustc-${{ steps.versions.outputs.rustc }}-${{ hashFiles('Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-cargo-
+          ${{ runner.os }}-rustc-${{ steps.versions.outputs.rustc }}-
+          ${{ runner.os }}-rustc-
 
     - name: Run backend tests
       run: CARGO_HOME=.cargo_home cargo test
@@ -40,10 +46,10 @@ jobs:
         # https://github.com/rustwasm/wasm-pack/issues/886
         version: v0.8.1
 
-    - name: Install node.js version 10.16 
+    - name: Install node.js version ${{ steps.versions.outputs.node }}
       uses: actions/setup-node@v1
       with:
-        node-version: 10.16
+        node-version: ${{ steps.versions.outputs.node }}
 
     - name: Audit npm dependencies (with --audit-level=high)
       run: cd wasm && npm audit --audit-level=high
@@ -52,8 +58,9 @@ jobs:
       uses: actions/cache@v2
       with:
         path: wasm/node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('wasm/package-lock.json') }}
+        key: ${{ runner.os }}-node-${{ steps.versions.outputs.node }}-${{ hashFiles('wasm/package-lock.json') }}
         restore-keys: |
+          ${{ runner.os }}-node-${{ steps.versions.outputs.node }}-
           ${{ runner.os }}-node-
 
     - name: Install frontend (npm) dependencies
