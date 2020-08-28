@@ -1,4 +1,4 @@
-name: New or Updated Pull Request
+name: Stage on new or updated pull request
 
 on:
   pull_request:
@@ -80,3 +80,4 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./wasm/dist
         publish_branch: gh-pages-staging
+        commit_message: Stage
