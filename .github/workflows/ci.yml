@@ -1,4 +1,4 @@
-name: Stage on new or updated pull request
+name: Test and Stage
 
 on:
   pull_request:

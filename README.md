@@ -1,5 +1,7 @@
 # Bluepaper
 
+![Test and Deploy status](https://github.com/robamler/bluepaper/workflows/Test%20and%20Deploy/badge.svg)
+
 Bluepaper is a small web app that exports Dropbox Paper documents to valid and clean LaTeX code.
 It also downloads included images, and packages them together with the LaTeX code in a `.zip` file.
 
