@@ -21,8 +21,9 @@ jobs:
 
     - name: Get tools versions
       id: versions
-      run: echo "::set-output name=rustc::`rustc --version | awk '{print $2}'`"
-      run: echo "::set-output name=node::10.16"
+      run: |
+        echo "::set-output name=rustc::`rustc --version | awk '{print $2}'`"
+        echo "::set-output name=node::10.16"
 
     - name: Cache backend (cargo) dependencies
       uses: actions/cache@v2
