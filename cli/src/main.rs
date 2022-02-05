@@ -242,7 +242,7 @@ fn select_dropbox_paper(api_key: &str) -> Result<(String, PaperMetaData), String
     println!("Getting list of most recently accesed Paper documents ...");
     debug!("Access token: \"{}\"", api_key);
 
-    let client = reqwest::Client::new();
+    let client = reqwest::blocking::Client::new();
 
     let paper_list: PaperList = client
         .post("https://api.dropboxapi.com/2/paper/docs/list")
@@ -307,7 +307,7 @@ fn select_dropbox_paper(api_key: &str) -> Result<(String, PaperMetaData), String
 }
 
 fn download_dropbox_paper(
-    client: &reqwest::Client,
+    client: &reqwest::blocking::Client,
     api_key: &str,
     doc_id: &str,
 ) -> (String, PaperMetaData) {
@@ -338,6 +338,7 @@ fn download_dropbox_paper(
 
     (response.text().unwrap(), meta_data)
 }
+
 fn main() {
     let opt = Opt::from_args();
 
