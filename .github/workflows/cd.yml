@@ -3,7 +3,7 @@ name: Test and Deploy
 on:
   push:
     branches:
-    - master
+      - master
   workflow_dispatch:
 
 env:
@@ -15,65 +15,68 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
 
-    - name: Get tools versions
-      id: versions
-      run: |
-        echo "::set-output name=rustc::`rustc --version | awk '{print $2}'`"
-        echo "::set-output name=node::10.16"
+      - name: Get tools versions
+        id: versions
+        run: |
+          echo "::set-output name=rustc::`rustc --version | awk '{print $2}'`"
+          echo "::set-output name=node::10.16"
 
-    - name: Cache backend (cargo) dependencies
-      uses: actions/cache@v2
-      with:
-        path: |
-          target
-          .cargo_home
-        key: ${{ runner.os }}-rustc-${{ steps.versions.outputs.rustc }}-${{ hashFiles('Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-rustc-${{ steps.versions.outputs.rustc }}-
-          ${{ runner.os }}-rustc-
+      - name: Cache backend (cargo) dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            target
+            .cargo_home
+          key: ${{ runner.os }}-rustc-${{ steps.versions.outputs.rustc }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rustc-${{ steps.versions.outputs.rustc }}-
+            ${{ runner.os }}-rustc-
 
-    - name: Run backend tests
-      run: CARGO_HOME=.cargo_home cargo test
+      - name: Install tectonic dependencies
+        run: sudo apt install -y libgraphite2-dev libicu-dev libpng-dev libfreetype-dev libfontconfig-dev
 
-    - name: Install wasm-pack 0.8.1
-      uses: jetli/wasm-pack-action@v0.3.0
-      with:
-        # Restrict to version 0.8.1 to work around this issue:
-        # https://users.rust-lang.org/t/unexpected-wasm-opt-crash-when-running-wasm-pack/46573
-        # https://github.com/rustwasm/wasm-pack/issues/886
-        version: v0.8.1
+      - name: Run backend tests
+        run: CARGO_HOME=.cargo_home cargo test
 
-    - name: Install node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ steps.versions.outputs.node }}
+      - name: Install wasm-pack 0.8.1
+        uses: jetli/wasm-pack-action@v0.3.0
+        with:
+          # Restrict to version 0.8.1 to work around this issue:
+          # https://users.rust-lang.org/t/unexpected-wasm-opt-crash-when-running-wasm-pack/46573
+          # https://github.com/rustwasm/wasm-pack/issues/886
+          version: v0.8.1
 
-    - name: Audit npm dependencies (with --audit-level=high)
-      run: cd wasm && npm audit --audit-level=high
+      - name: Install node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ steps.versions.outputs.node }}
 
-    - name: Cache frontend (npm) dependencies
-      uses: actions/cache@v2
-      with:
-        path: wasm/node_modules
-        key: ${{ runner.os }}-node-${{ steps.versions.outputs.node }}-${{ hashFiles('wasm/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-${{ steps.versions.outputs.node }}-
-          ${{ runner.os }}-node-
+      - name: Audit npm dependencies (with --audit-level=high)
+        run: cd wasm && npm audit --audit-level=high
 
-    - name: Install frontend (npm) dependencies
-      run: cd wasm && npm install
+      - name: Cache frontend (npm) dependencies
+        uses: actions/cache@v2
+        with:
+          path: wasm/node_modules
+          key: ${{ runner.os }}-node-${{ steps.versions.outputs.node }}-${{ hashFiles('wasm/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ steps.versions.outputs.node }}-
+            ${{ runner.os }}-node-
 
-    - name: Build app in release mode
-      run: cd wasm && CARGO_HOME=../.cargo_home npm run build
+      - name: Install frontend (npm) dependencies
+        run: cd wasm && npm install
 
-    - name: Deploy to gh-pages
-      id: staging
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./wasm/dist
-        commit_message: Deploy
+      - name: Build app in release mode
+        run: cd wasm && CARGO_HOME=../.cargo_home npm run build
+
+      - name: Deploy to gh-pages
+        id: staging
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./wasm/dist
+          commit_message: Deploy
