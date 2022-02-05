@@ -9,6 +9,9 @@ module.exports = {
   entry: {
     index: "./js/index.js"
   },
+  experiments: {
+    asyncWebAssembly: true,
+  },
   output: {
     path: dist,
     filename: "[name].js",
@@ -29,7 +32,6 @@ module.exports = {
     new WasmPackPlugin({
       forceMode: "production",
       crateDirectory: __dirname,
-      extraArgs: "--out-name index"
     }),
   ]
 };
