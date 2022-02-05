@@ -53,13 +53,8 @@ jobs:
       - name: Run backend tests
         run: CARGO_HOME=.cargo_home cargo test
 
-      - name: Install wasm-pack 0.8.1
+      - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.3.0
-        with:
-          # Restrict to version 0.8.1 to work around this issue:
-          # https://users.rust-lang.org/t/unexpected-wasm-opt-crash-when-running-wasm-pack/46573
-          # https://github.com/rustwasm/wasm-pack/issues/886
-          version: v0.8.1
 
       - name: Install node.js
         uses: actions/setup-node@v1
