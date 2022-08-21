@@ -19,7 +19,7 @@ module.exports = {
     library: 'jsmodule'
   },
   devServer: {
-    contentBase: dist,
+    static: "./static",
     https: true,
   },
   plugins: [
