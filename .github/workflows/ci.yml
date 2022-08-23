@@ -84,11 +84,8 @@ jobs:
       - name: Build app in release mode
         run: cd wasm && CARGO_HOME=../.cargo_home npm run build
 
-      - name: Stage on gh-pages-staging
-        id: staging
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./wasm/dist
-          publish_branch: gh-pages-staging
-          commit_message: Stage
+          name: bluepaper-staging
+          path: wasm/dist
