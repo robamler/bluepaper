@@ -601,7 +601,7 @@ export async function getPaperDocsWithApi(endpoint, message) {
     }
 
     if (json.error) {
-        if (json.error['.tag'] === "invalid_access_token") {
+        if (json.error['.tag'] === "invalid_access_token" || json.error['.tag'] === "expired_access_token") {
             document.getElementById("doc_list").style.display = "none";
             document.getElementById("authorization-container").style.display = "block";
         } else {
