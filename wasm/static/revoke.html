@@ -69,7 +69,9 @@
         try {
           await Promise.all(responses);
           // Remove cookie only if API call succeeded.
-          document.cookie = "bluepaper_dropbox_access_tokens=;max-age=0";
+          document.cookie = "bluepaper_dropbox_access_tokens=;path=/bluepaper/;max-age=0;secure;samesite=lax";
+          // Also remove legacy cookie without `path` restriction, if it exists.
+          document.cookie = "bluepaper_dropbox_access_tokens=;max-age=0;secure;samesite=lax";
           document.getElementById("status").innerText = (
             "✓ Successfully revoked access permissions to Dropbox and removed cookie."
           );
